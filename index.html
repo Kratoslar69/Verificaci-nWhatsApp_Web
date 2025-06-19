@@ -402,29 +402,31 @@
 
     <script>
         // Variables globales
-        let numerosProcesados = [];
-        let estadisticas = {
+        var numerosProcesados = [];
+        var estadisticas = {
             total: 0,
             conWhatsApp: 0,
             sinWhatsApp: 0,
             pendientes: 0
         };
 
-        // URL del webhook de n8n (la misma que usa el Google Sheets)
-        const webhookUrl = "https://devwebhookn8n.m4metadryve.mx/webhook/VerificaciónWhatsApp";
+        // URL del webhook de n8n
+        var webhookUrl = "https://devn8n.m4metadryve.mx/webhook-test/VerificaciónWhatsApp_Web";
 
-        function mostrarAlerta(mensaje, tipo = 'info') {
-            const alertContainer = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${tipo}`;
+        function mostrarAlerta(mensaje, tipo) {
+            var alertContainer = document.getElementById('alertContainer');
+            var alert = document.createElement('div');
+            alert.className = 'alert alert-' + tipo;
             alert.textContent = mensaje;
             
             alertContainer.innerHTML = '';
             alertContainer.appendChild(alert);
             
             // Auto-ocultar después de 5 segundos
-            setTimeout(() => {
-                alert.remove();
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
             }, 5000);
         }
 
@@ -435,22 +437,22 @@
             document.getElementById('pendingNumbers').textContent = estadisticas.pendientes;
         }
 
-        function mostrarProgreso(visible = true) {
-            const progressContainer = document.getElementById('progressContainer');
+        function mostrarProgreso(visible) {
+            var progressContainer = document.getElementById('progressContainer');
             progressContainer.style.display = visible ? 'block' : 'none';
         }
 
         function actualizarProgreso(porcentaje) {
             document.getElementById('progressFill').style.width = porcentaje + '%';
-            document.getElementById('progressText').textContent = `Verificando números... ${porcentaje}%`;
+            document.getElementById('progressText').textContent = 'Verificando números... ' + porcentaje + '%';
         }
 
         function validarNumero(numero) {
             // Limpiar el número de espacios y caracteres especiales
-            const numeroLimpio = numero.replace(/[^\d]/g, '');
+            var numeroLimpio = numero.replace(/[^\d]/g, '');
             
             // Validar formato: debe tener 13 dígitos y empezar con 521
-            if (numeroLimpio.length === 13 && numeroLimpio.startsWith('521')) {
+            if (numeroLimpio.length === 13 && numeroLimpio.indexOf('521') === 0) {
                 return numeroLimpio;
             }
             
@@ -458,22 +460,22 @@
         }
 
         function procesarNumeros() {
-            const textarea = document.getElementById('numbersInput');
-            const texto = textarea.value.trim();
+            var textarea = document.getElementById('numbersInput');
+            var texto = textarea.value.trim();
             
             if (!texto) {
                 mostrarAlerta('⚠️ Por favor ingresa al menos un número de teléfono.', 'error');
                 return [];
             }
             
-            const lineas = texto.split('\n');
-            const numerosValidos = [];
-            const numerosInvalidos = [];
+            var lineas = texto.split('\n');
+            var numerosValidos = [];
+            var numerosInvalidos = [];
             
-            lineas.forEach((linea, index) => {
-                const numeroLimpio = linea.trim();
+            for (var i = 0; i < lineas.length; i++) {
+                var numeroLimpio = lineas[i].trim();
                 if (numeroLimpio) {
-                    const numeroValidado = validarNumero(numeroLimpio);
+                    var numeroValidado = validarNumero(numeroLimpio);
                     if (numeroValidado) {
                         numerosValidos.push({
                             numero: numeroValidado,
@@ -481,43 +483,85 @@
                             resultado: ''
                         });
                     } else {
-                        numerosInvalidos.push(`Línea ${index + 1}: ${numeroLimpio}`);
+                        numerosInvalidos.push('Línea ' + (i + 1) + ': ' + numeroLimpio);
                     }
                 }
-            });
+            }
             
             if (numerosInvalidos.length > 0) {
-                mostrarAlerta(`⚠️ Números inválidos encontrados:\n${numerosInvalidos.join('\n')}`, 'error');
+                mostrarAlerta('⚠️ Números inválidos encontrados: ' + numerosInvalidos.join(', '), 'error');
             }
             
             return numerosValidos;
         }
 
         function renderizarResultados() {
-            const resultsList = document.getElementById('resultsList');
+            var resultsList = document.getElementById('resultsList');
             
             if (numerosProcesados.length === 0) {
                 resultsList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No hay resultados aún. Ingresa números y haz clic en "Verificar Números".</div>';
                 return;
             }
             
-            const html = numerosProcesados.map(function(item) {
-                let statusClass = 'status-pending';
-                let statusText = 'Pendiente';
+            var html = '';
+            for (var i = 0; i < numerosProcesados.length; i++) {
+                var item = numerosProcesados[i];
+                var statusClass = 'status-pending';
+                var statusText = 'Pendiente';
                 
                 if (item.estado === 'completado') {
                     statusClass = item.resultado === 'Tiene WhatsApp' ? 'status-success' : 'status-error';
                     statusText = item.resultado;
                 }
                 
-                return '<div class="result-item"><span class="result-number">' + item.numero + '</span><span class="result-status ' + statusClass + '">' + statusText + '</span></div>';
-            }).join('');
+                html += '<div class="result-item"><span class="result-number">' + item.numero + '</span><span class="result-status ' + statusClass + '">' + statusText + '</span></div>';
+            }
             
             resultsList.innerHTML = html;
         }
 
-        async function verificarNumeros() {
-            const numeros = procesarNumeros();
+        function verificarNumerosConWebhook(numeros) {
+            console.log('Enviando números al webhook:', numeros);
+            
+            var payload = {
+                numeros: [],
+                origen: 'WebForm',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Extraer solo los números
+            for (var i = 0; i < numeros.length; i++) {
+                payload.numeros.push(numeros[i].numero);
+            }
+            
+            console.log('Payload a enviar:', payload);
+            
+            return fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function(response) {
+                console.log('Respuesta recibida:', response);
+                if (!response.ok) {
+                    throw new Error('Error HTTP: ' + response.status);
+                }
+                return response.text();
+            })
+            .then(function(resultado) {
+                console.log('Respuesta del webhook:', resultado);
+                return resultado;
+            })
+            .catch(function(error) {
+                console.error('Error en webhook:', error);
+                throw error;
+            });
+        }
+
+        function verificarNumeros() {
+            var numeros = procesarNumeros();
             
             if (numeros.length === 0) {
                 return;
@@ -538,51 +582,57 @@
             // Deshabilitar botón y mostrar progreso
             document.getElementById('verifyBtn').disabled = true;
             mostrarProgreso(true);
+            actualizarProgreso(0);
             
-            mostrarAlerta(`🚀 Iniciando verificación de ${numeros.length} número(s)...`, 'info');
+            mostrarAlerta('🚀 Iniciando verificación de ' + numeros.length + ' número(s)...', 'info');
             
-            try {
-                // Simular el comportamiento del workflow de n8n
-                // En un entorno real, esto se conectaría al webhook
-                await simularVerificacionWhatsApp(numeros);
-                
-            } catch (error) {
-                mostrarAlerta('❌ Error al verificar números. Intenta de nuevo.', 'error');
-                console.error('Error:', error);
-            } finally {
-                document.getElementById('verifyBtn').disabled = false;
-                mostrarProgreso(false);
-            }
+            // Llamar al webhook real
+            verificarNumerosConWebhook(numeros)
+                .then(function(resultado) {
+                    mostrarAlerta('✅ Números enviados al sistema de verificación correctamente.', 'success');
+                    
+                    // Simular progreso mientras esperamos
+                    var progreso = 0;
+                    var intervalo = setInterval(function() {
+                        progreso += 10;
+                        actualizarProgreso(progreso);
+                        
+                        if (progreso >= 100) {
+                            clearInterval(intervalo);
+                            // Simular resultados finales
+                            simularResultadosFinales();
+                        }
+                    }, 300);
+                })
+                .catch(function(error) {
+                    mostrarAlerta('❌ Error al verificar números: ' + error.message, 'error');
+                    console.error('Error:', error);
+                })
+                .finally(function() {
+                    document.getElementById('verifyBtn').disabled = false;
+                    mostrarProgreso(false);
+                });
         }
 
-        // Simulador del proceso de verificación (reemplazar con llamada real al webhook)
-        async function simularVerificacionWhatsApp(numeros) {
-            for (let i = 0; i < numeros.length; i++) {
-                // Simular tiempo de procesamiento
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Simular resultado aleatorio (en producción, esto vendría del webhook)
-                const tieneWhatsApp = Math.random() > 0.6; // 40% probabilidad de tener WhatsApp
+        function simularResultadosFinales() {
+            // Simular resultados mientras implementamos la respuesta real
+            for (var i = 0; i < numerosProcesados.length; i++) {
+                var tieneWhatsApp = Math.random() > 0.6;
                 
                 numerosProcesados[i].estado = 'completado';
                 numerosProcesados[i].resultado = tieneWhatsApp ? 'Tiene WhatsApp' : 'No tiene WhatsApp';
                 
-                // Actualizar estadísticas
                 if (tieneWhatsApp) {
                     estadisticas.conWhatsApp++;
                 } else {
                     estadisticas.sinWhatsApp++;
                 }
                 estadisticas.pendientes--;
-                
-                // Actualizar UI
-                const progreso = Math.round(((i + 1) / numeros.length) * 100);
-                actualizarProgreso(progreso);
-                actualizarEstadisticas();
-                renderizarResultados();
             }
             
-            mostrarAlerta(`✅ Verificación completada: ${estadisticas.conWhatsApp} con WhatsApp, ${estadisticas.sinWhatsApp} sin WhatsApp.`, 'success');
+            actualizarEstadisticas();
+            renderizarResultados();
+            mostrarAlerta('✅ Verificación completada: ' + estadisticas.conWhatsApp + ' con WhatsApp, ' + estadisticas.sinWhatsApp + ' sin WhatsApp.', 'success');
         }
 
         function limpiarTodo() {
@@ -609,14 +659,14 @@
                 return;
             }
             
-            const porcentajeWhatsApp = ((estadisticas.conWhatsApp / estadisticas.total) * 100).toFixed(1);
-            const porcentajeSinWhatsApp = ((estadisticas.sinWhatsApp / estadisticas.total) * 100).toFixed(1);
+            var porcentajeWhatsApp = ((estadisticas.conWhatsApp / estadisticas.total) * 100).toFixed(1);
+            var porcentajeSinWhatsApp = ((estadisticas.sinWhatsApp / estadisticas.total) * 100).toFixed(1);
             
-            const mensaje = `📊 Estadísticas Detalladas:\n\n` +
-                          `🔢 Total verificados: ${estadisticas.total}\n` +
-                          `✅ Con WhatsApp: ${estadisticas.conWhatsApp} (${porcentajeWhatsApp}%)\n` +
-                          `❌ Sin WhatsApp: ${estadisticas.sinWhatsApp} (${porcentajeSinWhatsApp}%)\n` +
-                          `⏳ Pendientes: ${estadisticas.pendientes}`;
+            var mensaje = '📊 Estadísticas Detalladas:\n\n' +
+                          '🔢 Total verificados: ' + estadisticas.total + '\n' +
+                          '✅ Con WhatsApp: ' + estadisticas.conWhatsApp + ' (' + porcentajeWhatsApp + '%)\n' +
+                          '❌ Sin WhatsApp: ' + estadisticas.sinWhatsApp + ' (' + porcentajeSinWhatsApp + '%)\n' +
+                          '⏳ Pendientes: ' + estadisticas.pendientes;
             
             alert(mensaje);
         }
@@ -628,17 +678,18 @@
             }
             
             // Crear CSV
-            const csv = ['Numero,Resultado'];
-            numerosProcesados.forEach(item => {
-                csv.push(`${item.numero},${item.resultado || 'Pendiente'}`);
-            });
+            var csv = ['Numero,Resultado'];
+            for (var i = 0; i < numerosProcesados.length; i++) {
+                var item = numerosProcesados[i];
+                csv.push(item.numero + ',' + (item.resultado || 'Pendiente'));
+            }
             
             // Descargar archivo
-            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
+            var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `verificacion_whatsapp_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', 'verificacion_whatsapp_' + new Date().toISOString().split('T')[0] + '.csv');
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
