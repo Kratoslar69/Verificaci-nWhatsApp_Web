@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador WhatsApp - Sistema Web</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Gothic A1', 'Gotham', Arial, sans-serif;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #075E54, #25D366);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .content {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #25D366;
+        }
+        
+        .results-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #128C7E;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #075E54;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .textarea-container {
+            margin-bottom: 20px;
+        }
+        
+        .textarea-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .numbers-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #25D366;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Gothic A1', monospace;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        .numbers-input:focus {
+            outline: none;
+            border-color: #128C7E;
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Gothic A1', Arial, sans-serif;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #dcdcdc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #128C7E, #075E54);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #25D366;
+        }
+        
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: 800;
+            color: #075E54;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+        
+        .results-list {
+            background: white;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+        
+        .result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-number {
+            font-family: monospace;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .result-status {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .progress-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #ecf0f1;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #25D366, #128C7E);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #25D366;
+        }
+        
+        .instructions h4 {
+            color: #075E54;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: #666;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Validador WhatsApp</h1>
+            <p>Sistema Web de Verificación • Números Móviles</p>
+        </div>
+        
+        <div class="content">
+            <!-- Sección de Formulario -->
+            <div class="form-section">
+                <h3 class="section-title">📝 Números a Verificar</h3>
+                
+                <div class="instructions">
+                    <h4>📋 Instrucciones:</h4>
+                    <ul>
+                        <li>Ingresa un número por línea</li>
+                        <li>Formato: 521XXXXXXXXXX (12 dígitos)</li>
+                        <li>Ejemplo: 5219621427412</li>
+                        <li>No incluyas espacios ni guiones</li>
+                    </ul>
+                </div>
+                
+                <div class="textarea-container">
+                    <label for="numbersInput">Números de teléfono:</label>
+                    <textarea 
+                        id="numbersInput" 
+                        class="numbers-input" 
+                        placeholder="5219621427412&#10;5219621356263&#10;5219621429573&#10;..."
+                    ></textarea>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" id="verifyBtn" onclick="verificarNumeros()">
+                        ✅ Verificar Números
+                    </button>
+                    <button class="btn btn-danger" onclick="limpiarTodo()">
+                        🧹 Limpiar Todo
+                    </button>
+                </div>
+                
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Verificando números...</div>
+                </div>
+                
+                <div id="alertContainer"></div>
+            </div>
+            
+            <!-- Sección de Resultados -->
+            <div class="results-section">
+                <h3 class="section-title">📊 Resultados</h3>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalNumbers">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="withWhatsApp">0</div>
+                        <div class="stat-label">Con WhatsApp</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="withoutWhatsApp">0</div>
+                        <div class="stat-label">Sin WhatsApp</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pendingNumbers">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin: 15px 0;">
+                    <button class="btn btn-secondary" onclick="mostrarEstadisticas()">
+                        📈 Ver Estadísticas
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportarResultados()">
+                        📄 Exportar CSV
+                    </button>
+                </div>
+                
+                <div class="results-list" id="resultsList">
+                    <div style="padding: 40px; text-align: center; color: #666;">
+                        No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let numerosProcesados = [];
+        let estadisticas = {
+            total: 0,
+            conWhatsApp: 0,
+            sinWhatsApp: 0,
+            pendientes: 0
+        };
+
+        // URL del webhook de n8n (la misma que usa el Google Sheets)
+        const webhookUrl = "https://devwebhookn8n.m4metadryve.mx/webhook/VerificaciónWhatsApp";
+
+        function mostrarAlerta(mensaje, tipo = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${tipo}`;
+            alert.textContent = mensaje;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function actualizarEstadisticas() {
+            document.getElementById('totalNumbers').textContent = estadisticas.total;
+            document.getElementById('withWhatsApp').textContent = estadisticas.conWhatsApp;
+            document.getElementById('withoutWhatsApp').textContent = estadisticas.sinWhatsApp;
+            document.getElementById('pendingNumbers').textContent = estadisticas.pendientes;
+        }
+
+        function mostrarProgreso(visible = true) {
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.style.display = visible ? 'block' : 'none';
+        }
+
+        function actualizarProgreso(porcentaje) {
+            document.getElementById('progressFill').style.width = porcentaje + '%';
+            document.getElementById('progressText').textContent = `Verificando números... ${porcentaje}%`;
+        }
+
+        function validarNumero(numero) {
+            // Limpiar el número de espacios y caracteres especiales
+            const numeroLimpio = numero.replace(/[^\d]/g, '');
+            
+            // Validar formato: debe tener 12 dígitos y empezar con 521
+            if (numeroLimpio.length === 12 && numeroLimpio.startsWith('521')) {
+                return numeroLimpio;
+            }
+            
+            return null;
+        }
+
+        function procesarNumeros() {
+            const textarea = document.getElementById('numbersInput');
+            const texto = textarea.value.trim();
+            
+            if (!texto) {
+                mostrarAlerta('⚠️ Por favor ingresa al menos un número de teléfono.', 'error');
+                return [];
+            }
+            
+            const lineas = texto.split('\n');
+            const numerosValidos = [];
+            const numerosInvalidos = [];
+            
+            lineas.forEach((linea, index) => {
+                const numeroLimpio = linea.trim();
+                if (numeroLimpio) {
+                    const numeroValidado = validarNumero(numeroLimpio);
+                    if (numeroValidado) {
+                        numerosValidos.push({
+                            numero: numeroValidado,
+                            estado: 'pendiente',
+                            resultado: ''
+                        });
+                    } else {
+                        numerosInvalidos.push(`Línea ${index + 1}: ${numeroLimpio}`);
+                    }
+                }
+            });
+            
+            if (numerosInvalidos.length > 0) {
+                mostrarAlerta(`⚠️ Números inválidos encontrados:\n${numerosInvalidos.join('\n')}`, 'error');
+            }
+            
+            return numerosValidos;
+        }
+
+        function renderizarResultados() {
+            const resultsList = document.getElementById('resultsList');
+            
+            if (numerosProcesados.length === 0) {
+                resultsList.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: #666;">
+                        No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = numerosProcesados.map(item => {
+                let statusClass = 'status-pending';
+                let statusText = 'Pendiente';
+                
+                if (item.estado === 'completado') {
+                    statusClass = item.resultado === 'Tiene WhatsApp' ? 'status-success' : 'status-error';
+                    statusText = item.resultado;
+                }
+                
+                return `
+                    <div class="result-item">
+                        <span class="result-number">${item.numero}</span>
+                        <span class="result-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsList.innerHTML = html;
+        }
+
+        async function verificarNumeros() {
+            const numeros = procesarNumeros();
+            
+            if (numeros.length === 0) {
+                return;
+            }
+            
+            // Reiniciar variables
+            numerosProcesados = numeros;
+            estadisticas = {
+                total: numeros.length,
+                conWhatsApp: 0,
+                sinWhatsApp: 0,
+                pendientes: numeros.length
+            };
+            
+            actualizarEstadisticas();
+            renderizarResultados();
+            
+            // Deshabilitar botón y mostrar progreso
+            document.getElementById('verifyBtn').disabled = true;
+            mostrarProgreso(true);
+            
+            mostrarAlerta(`🚀 Iniciando verificación de ${numeros.length} número(s)...`, 'info');
+            
+            try {
+                // Simular el comportamiento del workflow de n8n
+                // En un entorno real, esto se conectaría al webhook
+                await simularVerificacionWhatsApp(numeros);
+                
+            } catch (error) {
+                mostrarAlerta('❌ Error al verificar números. Intenta de nuevo.', 'error');
+                console.error('Error:', error);
+            } finally {
+                document.getElementById('verifyBtn').disabled = false;
+                mostrarProgreso(false);
+            }
+        }
+
+        // Simulador del proceso de verificación (reemplazar con llamada real al webhook)
+        async function simularVerificacionWhatsApp(numeros) {
+            for (let i = 0; i < numeros.length; i++) {
+                // Simular tiempo de procesamiento
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Simular resultado aleatorio (en producción, esto vendría del webhook)
+                const tieneWhatsApp = Math.random() > 0.6; // 40% probabilidad de tener WhatsApp
+                
+                numerosProcesados[i].estado = 'completado';
+                numerosProcesados[i].resultado = tieneWhatsApp ? 'Tiene WhatsApp' : 'No tiene WhatsApp';
+                
+                // Actualizar estadísticas
+                if (tieneWhatsApp) {
+                    estadisticas.conWhatsApp++;
+                } else {
+                    estadisticas.sinWhatsApp++;
+                }
+                estadisticas.pendientes--;
+                
+                // Actualizar UI
+                const progreso = Math.round(((i + 1) / numeros.length) * 100);
+                actualizarProgreso(progreso);
+                actualizarEstadisticas();
+                renderizarResultados();
+            }
+            
+            mostrarAlerta(`✅ Verificación completada: ${estadisticas.conWhatsApp} con WhatsApp, ${estadisticas.sinWhatsApp} sin WhatsApp.`, 'success');
+        }
+
+        function limpiarTodo() {
+            document.getElementById('numbersInput').value = '';
+            numerosProcesados = [];
+            estadisticas = {
+                total: 0,
+                conWhatsApp: 0,
+                sinWhatsApp: 0,
+                pendientes: 0
+            };
+            
+            actualizarEstadisticas();
+            renderizarResultados();
+            document.getElementById('alertContainer').innerHTML = '';
+            mostrarProgreso(false);
+            
+            mostrarAlerta('🧹 Todo limpiado correctamente.', 'success');
+        }
+
+        function mostrarEstadisticas() {
+            if (estadisticas.total === 0) {
+                mostrarAlerta('⚠️ No hay estadísticas para mostrar. Verifica algunos números primero.', 'error');
+                return;
+            }
+            
+            const porcentajeWhatsApp = ((estadisticas.conWhatsApp / estadisticas.total) * 100).toFixed(1);
+            const porcentajeSinWhatsApp = ((estadisticas.sinWhatsApp / estadisticas.total) * 100).toFixed(1);
+            
+            const mensaje = `📊 Estadísticas Detalladas:\n\n` +
+                          `🔢 Total verificados: ${estadisticas.total}\n` +
+                          `✅ Con WhatsApp: ${estadisticas.conWhatsApp} (${porcentajeWhatsApp}%)\n` +
+                          `❌ Sin WhatsApp: ${estadisticas.sinWhatsApp} (${porcentajeSinWhatsApp}%)\n` +
+                          `⏳ Pendientes: ${estadisticas.pendientes}`;
+            
+            alert(mensaje);
+        }
+
+        function exportarResultados() {
+            if (numerosProcesados.length === 0) {
+                mostrarAlerta('⚠️ No hay resultados para exportar.', 'error');
+                return;
+            }
+            
+            // Crear CSV
+            const csv = ['Numero,Resultado'];
+            numerosProcesados.forEach(item => {
+                csv.push(`${item.numero},${item.resultado || 'Pendiente'}`);
+            });
+            
+            // Descargar archivo
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `verificacion_whatsapp_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarAlerta('📄 Archivo CSV descargado correctamente.', 'success');
+        }
+
+        // Inicializar la aplicación
+        window.addEventListener('load', function() {
+            actualizarEstadisticas();
+            renderizarResultados();
+        });
+    </script>
+</body>
+</html>
