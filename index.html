@@ -552,17 +552,18 @@
             })
             .then(function(resultado) {
                 console.log('Respuesta del webhook (texto):', resultado);
-                // Intentar parsear como JSON si es posible
+                
+                // Intentar parsear como JSON
+                var datosJson;
                 try {
-                    var datosJson = JSON.parse(resultado);
-                    console.log('Respuesta del webhook (JSON):', datosJson);
-                    return datosJson;
+                    datosJson = JSON.parse(resultado);
+                    console.log('Respuesta parseada como JSON:', datosJson);
                 } catch (e) {
-                    // Si no es JSON, asumir que es texto simple
-                    console.log('Respuesta del webhook es texto plano:', resultado);
-                    return { mensaje: resultado };
+                    console.log('No es JSON válido, tratando como texto:', resultado);
+                    datosJson = { mensaje: resultado, status: 'success' };
                 }
-            })
+                
+                return datosJson;
             .catch(function(error) {
                 console.error('Error en webhook:', error);
                 throw error;
