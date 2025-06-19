@@ -297,6 +297,18 @@
             margin-bottom: 5px;
         }
         
+        .debug-info {
+            background: #f1f3f4;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             .content {
                 grid-template-columns: 1fr;
@@ -347,6 +359,9 @@
                     <button class="btn btn-danger" onclick="limpiarTodo()">
                         🧹 Limpiar Todo
                     </button>
+                    <button class="btn btn-secondary" onclick="toggleDebug()">
+                        🔧 Debug
+                    </button>
                 </div>
                 
                 <div class="progress-container" id="progressContainer">
@@ -357,6 +372,7 @@
                 </div>
                 
                 <div id="alertContainer"></div>
+                <div class="debug-info" id="debugInfo"></div>
             </div>
             
             <!-- Sección de Resultados -->
@@ -412,6 +428,30 @@
 
         // URL del webhook de n8n
         var webhookUrl = "https://devn8n.m4metadryve.mx/webhook-test/VerificaciónWhatsApp_Web";
+        var debugMode = false;
+
+        function logDebug(mensaje, data) {
+            if (debugMode) {
+                var debugInfo = document.getElementById('debugInfo');
+                var timestamp = new Date().toLocaleTimeString();
+                var logEntry = '[' + timestamp + '] ' + mensaje;
+                if (data) {
+                    logEntry += '\n' + JSON.stringify(data, null, 2);
+                }
+                debugInfo.textContent += logEntry + '\n\n';
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+            }
+            console.log(mensaje, data);
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            var debugInfo = document.getElementById('debugInfo');
+            debugInfo.style.display = debugMode ? 'block' : 'none';
+            if (debugMode) {
+                debugInfo.textContent = '=== DEBUG MODE ACTIVADO ===\n\n';
+            }
+        }
 
         function mostrarAlerta(mensaje, tipo) {
             var alertContainer = document.getElementById('alertContainer');
@@ -492,6 +532,11 @@
                 mostrarAlerta('⚠️ Números inválidos encontrados: ' + numerosInvalidos.join(', '), 'error');
             }
             
+            logDebug('Números procesados:', {
+                validos: numerosValidos,
+                invalidos: numerosInvalidos
+            });
+            
             return numerosValidos;
         }
 
@@ -521,7 +566,7 @@
         }
 
         function verificarNumerosConWebhook(numeros) {
-            console.log('Enviando números al webhook:', numeros);
+            logDebug('Enviando números al webhook:', numeros);
             
             var payload = {
                 numeros: [],
@@ -534,56 +579,115 @@
                 payload.numeros.push(numeros[i].numero);
             }
             
-            console.log('Payload a enviar:', payload);
+            logDebug('Payload a enviar:', payload);
             
             return fetch(webhookUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(payload)
             })
             .then(function(response) {
-                console.log('Respuesta recibida:', response);
+                logDebug('Respuesta recibida - Status:', response.status);
+                logDebug('Respuesta recibida - Headers:', {
+                    contentType: response.headers.get('content-type'),
+                    status: response.status,
+                    statusText: response.statusText
+                });
+                
                 if (!response.ok) {
-                    throw new Error('Error HTTP: ' + response.status);
+                    throw new Error('Error HTTP: ' + response.status + ' - ' + response.statusText);
                 }
-                return response.text();
+                
+                return response.json();
             })
             .then(function(resultado) {
-                console.log('Respuesta del webhook:', resultado);
+                logDebug('Respuesta JSON del webhook:', resultado);
                 return resultado;
             })
             .catch(function(error) {
-                console.error('Error en webhook:', error);
+                logDebug('Error en webhook:', error);
                 throw error;
             });
         }
 
-        function procesarRespuestaReal(respuesta) {
-            console.log('Procesando respuesta real:', respuesta);
+        function procesarRespuestaWebhook(respuesta) {
+            logDebug('Procesando respuesta del webhook:', respuesta);
             
-            // Usar datos conocidos del workflow (sabemos que 5213329448797 tiene WhatsApp)
-            var numerosConWhatsApp = ['5213329448797'];
-            
-            for (var i = 0; i < numerosProcesados.length; i++) {
-                var numero = numerosProcesados[i].numero;
-                var tieneWhatsApp = numerosConWhatsApp.indexOf(numero) !== -1;
+            try {
+                // La respuesta del webhook viene en formato:
+                // { status: "success", message: "...", total: X, resultados: [...] }
                 
-                numerosProcesados[i].estado = 'completado';
-                numerosProcesados[i].resultado = tieneWhatsApp ? 'Tiene WhatsApp' : 'No tiene WhatsApp';
-                
-                if (tieneWhatsApp) {
-                    estadisticas.conWhatsApp++;
-                } else {
-                    estadisticas.sinWhatsApp++;
+                if (!respuesta || respuesta.status !== 'success') {
+                    throw new Error('Respuesta inválida del webhook: ' + JSON.stringify(respuesta));
                 }
-                estadisticas.pendientes--;
+                
+                var resultados = respuesta.resultados || [];
+                logDebug('Resultados extraídos:', resultados);
+                
+                if (!Array.isArray(resultados)) {
+                    throw new Error('Los resultados no son un array válido');
+                }
+                
+                // Procesar cada resultado
+                for (var i = 0; i < numerosProcesados.length; i++) {
+                    var numeroProcesado = numerosProcesados[i];
+                    
+                    // Buscar el resultado correspondiente
+                    var resultadoEncontrado = null;
+                    for (var j = 0; j < resultados.length; j++) {
+                        var resultado = resultados[j];
+                        // El webhook devuelve row_number y Resultado
+                        if (resultado.row_number === (i + 1)) {
+                            resultadoEncontrado = resultado;
+                            break;
+                        }
+                    }
+                    
+                    if (resultadoEncontrado) {
+                        numerosProcesados[i].estado = 'completado';
+                        numerosProcesados[i].resultado = resultadoEncontrado.Resultado;
+                        
+                        if (resultadoEncontrado.Resultado === 'Tiene WhatsApp') {
+                            estadisticas.conWhatsApp++;
+                        } else {
+                            estadisticas.sinWhatsApp++;
+                        }
+                        estadisticas.pendientes--;
+                    } else {
+                        // Si no se encuentra resultado, marcarlo como error
+                        numerosProcesados[i].estado = 'completado';
+                        numerosProcesados[i].resultado = 'Error al verificar';
+                        estadisticas.sinWhatsApp++;
+                        estadisticas.pendientes--;
+                    }
+                }
+                
+                logDebug('Estadísticas finales:', estadisticas);
+                logDebug('Números procesados finales:', numerosProcesados);
+                
+                actualizarEstadisticas();
+                renderizarResultados();
+                mostrarAlerta('✅ Verificación completada: ' + estadisticas.conWhatsApp + ' con WhatsApp, ' + estadisticas.sinWhatsApp + ' sin WhatsApp.', 'success');
+                
+            } catch (error) {
+                logDebug('Error procesando respuesta:', error);
+                mostrarAlerta('❌ Error procesando resultados: ' + error.message, 'error');
+                
+                // Marcar todos como error
+                for (var i = 0; i < numerosProcesados.length; i++) {
+                    if (numerosProcesados[i].estado === 'pendiente') {
+                        numerosProcesados[i].estado = 'completado';
+                        numerosProcesados[i].resultado = 'Error al verificar';
+                        estadisticas.sinWhatsApp++;
+                        estadisticas.pendientes--;
+                    }
+                }
+                actualizarEstadisticas();
+                renderizarResultados();
             }
-            
-            actualizarEstadisticas();
-            renderizarResultados();
-            mostrarAlerta('✅ Verificación completada: ' + estadisticas.conWhatsApp + ' con WhatsApp, ' + estadisticas.sinWhatsApp + ' sin WhatsApp.', 'success');
         }
 
         function verificarNumeros() {
@@ -612,27 +716,34 @@
             
             mostrarAlerta('🚀 Iniciando verificación de ' + numeros.length + ' número(s)...', 'info');
             
+            // Simular progreso inicial
+            actualizarProgreso(25);
+            
             // Llamar al webhook real
             verificarNumerosConWebhook(numeros)
                 .then(function(resultado) {
-                    mostrarAlerta('✅ Números procesados por el workflow correctamente.', 'success');
+                    actualizarProgreso(75);
+                    mostrarAlerta('✅ Números enviados al sistema de verificación.', 'info');
                     
-                    // Simular progreso mientras procesamos
-                    var progreso = 0;
-                    var intervalo = setInterval(function() {
-                        progreso += 20;
-                        actualizarProgreso(progreso);
-                        
-                        if (progreso >= 100) {
-                            clearInterval(intervalo);
-                            // Procesar resultados reales
-                            procesarRespuestaReal(resultado);
-                        }
-                    }, 200);
+                    // Procesar resultados del webhook
+                    setTimeout(function() {
+                        actualizarProgreso(100);
+                        procesarRespuestaWebhook(resultado);
+                    }, 500);
                 })
                 .catch(function(error) {
                     mostrarAlerta('❌ Error al verificar números: ' + error.message, 'error');
-                    console.error('Error:', error);
+                    logDebug('Error completo:', error);
+                    
+                    // Marcar todos como error
+                    for (var i = 0; i < numerosProcesados.length; i++) {
+                        numerosProcesados[i].estado = 'completado';
+                        numerosProcesados[i].resultado = 'Error de conexión';
+                        estadisticas.sinWhatsApp++;
+                        estadisticas.pendientes--;
+                    }
+                    actualizarEstadisticas();
+                    renderizarResultados();
                 })
                 .finally(function() {
                     document.getElementById('verifyBtn').disabled = false;
@@ -654,6 +765,10 @@
             renderizarResultados();
             document.getElementById('alertContainer').innerHTML = '';
             mostrarProgreso(false);
+            
+            if (debugMode) {
+                document.getElementById('debugInfo').textContent = '=== DEBUG MODE ACTIVADO ===\n\n';
+            }
             
             mostrarAlerta('🧹 Todo limpiado correctamente.', 'success');
         }
@@ -707,6 +822,7 @@
         window.addEventListener('load', function() {
             actualizarEstadisticas();
             renderizarResultados();
+            logDebug('Aplicación inicializada correctamente');
         });
     </script>
 </body>
