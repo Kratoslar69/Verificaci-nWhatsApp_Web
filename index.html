@@ -497,15 +497,11 @@
             const resultsList = document.getElementById('resultsList');
             
             if (numerosProcesados.length === 0) {
-                resultsList.innerHTML = `
-                    <div style="padding: 40px; text-align: center; color: #666;">
-                        No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
-                    </div>
-                `;
+                resultsList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No hay resultados aún. Ingresa números y haz clic en "Verificar Números".</div>';
                 return;
             }
             
-            const html = numerosProcesados.map(item => {
+            const html = numerosProcesados.map(function(item) {
                 let statusClass = 'status-pending';
                 let statusText = 'Pendiente';
                 
@@ -514,12 +510,7 @@
                     statusText = item.resultado;
                 }
                 
-                return `
-                    <div class="result-item">
-                        <span class="result-number">${item.numero}</span>
-                        <span class="result-status ${statusClass}">${statusText}</span>
-                    </div>
-                `;
+                return '<div class="result-item"><span class="result-number">' + item.numero + '</span><span class="result-status ' + statusClass + '">' + statusText + '</span></div>';
             }).join('');
             
             resultsList.innerHTML = html;
