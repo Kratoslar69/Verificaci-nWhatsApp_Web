@@ -362,6 +362,9 @@
                     <button class="btn btn-secondary" onclick="toggleDebug()">
                         🔧 Debug
                     </button>
+                    <button class="btn btn-secondary" onclick="probarWebhook()">
+                        🌐 Probar Webhook
+                    </button>
                 </div>
                 
                 <div class="progress-container" id="progressContainer">
@@ -580,15 +583,22 @@
             }
             
             logDebug('Payload a enviar:', payload);
+            logDebug('URL del webhook:', webhookUrl);
             
-            return fetch(webhookUrl, {
+            // Intentar diferentes configuraciones de fetch para solucionar CORS
+            var fetchOptions = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(payload)
-            })
+                body: JSON.stringify(payload),
+                mode: 'cors' // Explícitamente habilitar CORS
+            };
+            
+            logDebug('Opciones de fetch:', fetchOptions);
+            
+            return fetch(webhookUrl, fetchOptions)
             .then(function(response) {
                 logDebug('Respuesta recibida - Status:', response.status);
                 logDebug('Respuesta recibida - Headers:', {
@@ -608,8 +618,46 @@
                 return resultado;
             })
             .catch(function(error) {
-                logDebug('Error en webhook:', error);
+                logDebug('Error en webhook - Tipo:', error.name);
+                logDebug('Error en webhook - Mensaje:', error.message);
+                
+                // Análisis específico del error
+                if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+                    logDebug('Diagnóstico: Posible problema de CORS o conectividad');
+                    throw new Error('No se puede conectar al webhook. Posibles causas:\n' +
+                                  '1. Problema de CORS - el webhook no permite peticiones desde navegador\n' +
+                                  '2. Webhook inactivo o URL incorrecta\n' +
+                                  '3. Problema de red');
+                }
+                
                 throw error;
+            });
+        }
+
+        // Función alternativa para probar conectividad
+        function probarConexionWebhook() {
+            logDebug('Probando conexión al webhook...');
+            
+            var testPayload = {
+                test: true,
+                timestamp: new Date().toISOString()
+            };
+            
+            return fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(testPayload),
+                mode: 'no-cors' // Intentar sin CORS primero
+            })
+            .then(function(response) {
+                logDebug('Test de conexión - Status:', response.status);
+                return response;
+            })
+            .catch(function(error) {
+                logDebug('Test de conexión falló:', error);
+                return null;
             });
         }
 
@@ -816,6 +864,37 @@
             document.body.removeChild(link);
             
             mostrarAlerta('📄 Archivo CSV descargado correctamente.', 'success');
+        }
+
+        function probarWebhook() {
+            if (!debugMode) {
+                toggleDebug();
+            }
+            
+            logDebug('=== INICIANDO PRUEBA DE WEBHOOK ===');
+            mostrarAlerta('🔍 Probando conexión al webhook...', 'info');
+            
+            probarConexionWebhook()
+                .then(function(response) {
+                    if (response) {
+                        logDebug('✅ Webhook responde, probando con datos reales...');
+                        mostrarAlerta('✅ Webhook activo, probando verificación...', 'info');
+                        
+                        // Probar con un número conocido
+                        var numeroTest = [{numero: '5213329448797', estado: 'pendiente', resultado: ''}];
+                        return verificarNumerosConWebhook(numeroTest);
+                    } else {
+                        throw new Error('Webhook no responde');
+                    }
+                })
+                .then(function(resultado) {
+                    logDebug('✅ Prueba exitosa:', resultado);
+                    mostrarAlerta('✅ Webhook funcionando correctamente!', 'success');
+                })
+                .catch(function(error) {
+                    logDebug('❌ Prueba falló:', error);
+                    mostrarAlerta('❌ Problema con webhook: ' + error.message, 'error');
+                });
         }
 
         // Inicializar la aplicación
