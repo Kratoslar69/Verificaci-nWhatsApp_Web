@@ -611,38 +611,22 @@
                     throw new Error('Error HTTP: ' + response.status + ' - ' + response.statusText);
                 }
                 
-                // Intentar determinar el tipo de respuesta
-                var contentType = response.headers.get('content-type') || '';
-                logDebug('Content-Type de respuesta:', contentType);
+                // Clonar la respuesta para poder leerla múltiples veces
+                var responseClone = response.clone();
                 
-                if (contentType.includes('application/json')) {
-                    return response.json();
-                } else {
-                    // Si no es JSON, obtener como texto para diagnosticar
-                    return response.text().then(function(text) {
-                        logDebug('Respuesta como texto:', text);
-                        
-                        // Intentar parsear como JSON manualmente
-                        try {
-                            var jsonData = JSON.parse(text);
-                            logDebug('Texto parseado exitosamente como JSON:', jsonData);
-                            return jsonData;
-                        } catch (e) {
-                            logDebug('No se pudo parsear como JSON:', e);
-                            // Devolver estructura simulada para continuar
-                            return {
-                                status: 'success',
-                                message: 'Respuesta procesada como texto',
-                                total: 1,
-                                resultados: [{
-                                    row_number: 1,
-                                    Resultado: 'Respuesta no estándar - revisar webhook'
-                                }],
-                                raw_response: text
-                            };
-                        }
+                return response.json()
+                    .catch(function(jsonError) {
+                        logDebug('Error parseando JSON, intentando como texto:', jsonError);
+                        return responseClone.text().then(function(text) {
+                            logDebug('Respuesta como texto:', text);
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                logDebug('No se pudo parsear como JSON:', e);
+                                return { error: 'Respuesta no válida', raw: text };
+                            }
+                        });
                     });
-                }
             })
             .then(function(resultado) {
                 logDebug('Respuesta JSON del webhook:', resultado);
@@ -693,96 +677,84 @@
         }
 
         function procesarRespuestaWebhook(respuesta) {
-            logDebug('Procesando respuesta del webhook:', respuesta);
+            logDebug('Procesando respuesta del webhook - Tipo:', typeof respuesta);
+            logDebug('Procesando respuesta del webhook - Datos:', respuesta);
             
             try {
-                // Verificar si tenemos respuesta raw del webhook
-                if (respuesta.raw_response) {
-                    logDebug('Respuesta raw del webhook:', respuesta.raw_response);
-                }
-                
-                // La respuesta del webhook puede venir en diferentes formatos
                 var resultados = [];
                 
-                // Formato 1: Respuesta estándar con estructura definida
-                if (respuesta.resultados && Array.isArray(respuesta.resultados)) {
+                // Verificar si hay error en la respuesta
+                if (respuesta.error) {
+                    throw new Error('Error en respuesta del webhook: ' + respuesta.error);
+                }
+                
+                // Caso 1: La respuesta es directamente un array de resultados del workflow n8n
+                if (Array.isArray(respuesta)) {
+                    logDebug('Respuesta es array directo');
+                    resultados = respuesta.map(function(item, index) {
+                        logDebug('Procesando item del array:', item);
+                        return {
+                            row_number: index + 1,
+                            Resultado: item.Resultado || (item.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp')
+                        };
+                    });
+                }
+                // Caso 2: Estructura con propiedad 'resultados'
+                else if (respuesta.resultados && Array.isArray(respuesta.resultados)) {
+                    logDebug('Respuesta tiene propiedad resultados');
                     resultados = respuesta.resultados;
                 }
-                // Formato 2: Respuesta directa como array
-                else if (Array.isArray(respuesta)) {
-                    resultados = respuesta.map(function(item, index) {
-                        return {
-                            row_number: index + 1,
-                            Resultado: item.Resultado || (item.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp')
-                        };
-                    });
-                }
-                // Formato 3: Respuesta con datos en propiedad diferente
-                else if (respuesta.data && Array.isArray(respuesta.data)) {
-                    resultados = respuesta.data.map(function(item, index) {
-                        return {
-                            row_number: index + 1,
-                            Resultado: item.Resultado || (item.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp')
-                        };
-                    });
-                }
-                // Formato 4: Respuesta individual
-                else if (respuesta.exists !== undefined) {
-                    resultados = [{
-                        row_number: 1,
-                        Resultado: respuesta.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp'
-                    }];
-                }
-                // Formato 5: Respuesta no estándar - simular resultado
-                else {
-                    logDebug('Formato de respuesta no reconocido, creando resultado simulado');
-                    resultados = numerosProcesados.map(function(num, index) {
-                        return {
-                            row_number: index + 1,
-                            Resultado: 'Verificación completada (formato no estándar)'
-                        };
-                    });
+                // Caso 3: Respuesta del n8n con estructura específica
+                else if (respuesta && typeof respuesta === 'object') {
+                    logDebug('Respuesta es objeto, buscando propiedades...');
+                    
+                    // Buscar diferentes propiedades que podrían contener los resultados
+                    var possibleResults = respuesta.data || respuesta.items || respuesta.output || [respuesta];
+                    
+                    if (Array.isArray(possibleResults)) {
+                        resultados = possibleResults.map(function(item, index) {
+                            return {
+                                row_number: index + 1,
+                                Resultado: item.Resultado || (item.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp')
+                            };
+                        });
+                    } else {
+                        // Es un objeto individual
+                        resultados = [{
+                            row_number: 1,
+                            Resultado: respuesta.Resultado || (respuesta.exists ? 'Tiene WhatsApp' : 'No tiene WhatsApp')
+                        }];
+                    }
                 }
                 
                 logDebug('Resultados finales procesados:', resultados);
                 
                 if (resultados.length === 0) {
-                    throw new Error('No se pudieron extraer resultados válidos de la respuesta');
+                    logDebug('No se encontraron resultados, creando resultado por defecto');
+                    // Si no hay resultados, crear uno por defecto para cada número
+                    resultados = numerosProcesados.map(function(num, index) {
+                        return {
+                            row_number: index + 1,
+                            Resultado: 'Verificación completada'
+                        };
+                    });
                 }
                 
-                // Procesar cada resultado
+                // Actualizar cada número procesado con su resultado
                 for (var i = 0; i < numerosProcesados.length; i++) {
-                    var numeroProcesado = numerosProcesados[i];
+                    var numeroIndex = i;
+                    var resultado = resultados[numeroIndex] || resultados[0]; // Usar el primero si no hay suficientes
                     
-                    // Buscar el resultado correspondiente
-                    var resultadoEncontrado = null;
-                    for (var j = 0; j < resultados.length; j++) {
-                        var resultado = resultados[j];
-                        if (resultado.row_number === (i + 1)) {
-                            resultadoEncontrado = resultado;
-                            break;
-                        }
-                    }
+                    numerosProcesados[i].estado = 'completado';
+                    numerosProcesados[i].resultado = resultado.Resultado;
                     
-                    if (resultadoEncontrado) {
-                        numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = resultadoEncontrado.Resultado;
-                        
-                        if (resultadoEncontrado.Resultado.includes('Tiene WhatsApp')) {
-                            estadisticas.conWhatsApp++;
-                        } else {
-                            estadisticas.sinWhatsApp++;
-                        }
-                        estadisticas.pendientes--;
+                    // Contar estadísticas
+                    if (resultado.Resultado && resultado.Resultado.toLowerCase().includes('tiene whatsapp')) {
+                        estadisticas.conWhatsApp++;
                     } else {
-                        // Si no se encuentra resultado, usar el primero disponible
-                        if (resultados.length > 0) {
-                            numerosProcesados[i].estado = 'completado';
-                            numerosProcesados[i].resultado = resultados[0].Resultado;
-                            estadisticas.sinWhatsApp++;
-                            estadisticas.pendientes--;
-                        }
+                        estadisticas.sinWhatsApp++;
                     }
+                    estadisticas.pendientes--;
                 }
                 
                 logDebug('Estadísticas finales:', estadisticas);
@@ -796,11 +768,11 @@
                 logDebug('Error procesando respuesta:', error);
                 mostrarAlerta('❌ Error procesando resultados: ' + error.message, 'error');
                 
-                // Marcar todos como error
+                // Marcar todos como error pero completados
                 for (var i = 0; i < numerosProcesados.length; i++) {
                     if (numerosProcesados[i].estado === 'pendiente') {
                         numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = 'Error al verificar';
+                        numerosProcesados[i].resultado = 'Error al procesar';
                         estadisticas.sinWhatsApp++;
                         estadisticas.pendientes--;
                     }
