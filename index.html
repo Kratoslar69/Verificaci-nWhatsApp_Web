@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validador WhatsApp - Sistema Web</title>
+    <title>Envío Masivo WhatsApp - TextMeBot</title>
+    <meta name="description" content="Sistema web para envío masivo de mensajes a grupos de WhatsApp usando TextMeBot API">
+    <meta name="keywords" content="WhatsApp, envío masivo, TextMeBot, grupos, mensajes">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;600;700;800;900&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
@@ -14,855 +15,1412 @@
         }
         
         body {
-            font-family: 'Gothic A1', 'Gotham', Arial, sans-serif;
-            background: linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            color: #333;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow: hidden;
+            padding: 20px;
         }
         
         .header {
-            background: linear-gradient(45deg, #075E54, #25D366);
-            color: white;
-            padding: 30px;
             text-align: center;
+            color: white;
+            margin-bottom: 30px;
         }
         
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            font-weight: 900;
-            letter-spacing: -1px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-            font-weight: 400;
+        .main-panel {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
         }
         
-        .content {
-            padding: 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
         
-        .form-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid #25D366;
-        }
-        
-        .results-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid #128C7E;
-        }
-        
-        .section-title {
-            font-size: 1.5em;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #075E54;
+        .tabs {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
         }
         
-        .textarea-container {
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+        
+        .tab-content {
+            padding: 30px;
+        }
+        
+        .form-group {
             margin-bottom: 20px;
         }
         
-        .textarea-container label {
+        .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: #495057;
         }
         
-        .numbers-input {
+        .form-control {
             width: 100%;
-            min-height: 200px;
-            padding: 15px;
-            border: 2px solid #25D366;
+            padding: 12px;
+            border: 2px solid #e9ecef;
             border-radius: 8px;
-            font-size: 1em;
-            font-family: 'Gothic A1', monospace;
-            resize: vertical;
+            font-size: 14px;
             transition: border-color 0.3s ease;
         }
         
-        .numbers-input:focus {
+        .form-control:focus {
             outline: none;
-            border-color: #128C7E;
-            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         .btn {
-            background: linear-gradient(45deg, #25D366, #128C7E);
-            color: white;
+            padding: 12px 24px;
             border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
-            margin: 5px;
+            cursor: pointer;
             transition: all 0.3s ease;
-            font-family: 'Gothic A1', Arial, sans-serif;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         
-        .btn:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .btn:disabled {
-            background: #dcdcdc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(45deg, #128C7E, #075E54);
+        .btn-success {
+            background: #28a745;
+            color: white;
         }
         
         .btn-danger {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            background: #dc3545;
+            color: white;
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
         }
         
-        .stat-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #25D366;
+        .groups-container {
+            margin-top: 20px;
         }
         
-        .stat-number {
-            font-size: 1.8em;
-            font-weight: 800;
-            color: #075E54;
-        }
-        
-        .stat-label {
-            color: #666;
-            margin-top: 5px;
-            font-weight: 500;
-            font-size: 0.9em;
-        }
-        
-        .results-list {
-            background: white;
-            border-radius: 8px;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-        }
-        
-        .result-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #f0f0f0;
+        .groups-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
         
-        .result-item:last-child {
+        .groups-search {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .groups-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .groups-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .groups-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .group-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background-color 0.2s;
+        }
+        
+        .group-item:hover {
+            background-color: #f8f9ff;
+        }
+        
+        .group-item:last-child {
             border-bottom: none;
         }
         
-        .result-number {
-            font-family: monospace;
+        .group-checkbox {
+            margin-right: 12px;
+            transform: scale(1.1);
+        }
+        
+        .group-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .group-name {
             font-weight: 600;
             color: #333;
+            font-size: 14px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
-        .result-status {
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: 600;
+        .group-details {
+            font-size: 11px;
+            color: #6c757d;
+            display: flex;
+            gap: 15px;
         }
         
-        .status-success {
-            background: #d4edda;
-            color: #155724;
+        .group-detail {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
         }
         
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
+        .group-actions {
+            display: flex;
+            gap: 8px;
         }
         
-        .status-pending {
+        .btn-xs {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+        
+        .btn-outline:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .groups-stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
             background: #fff3cd;
-            color: #856404;
+            border-radius: 6px;
+            border: 1px solid #ffeaa7;
         }
         
-        .progress-container {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+        .bulk-actions.hidden {
             display: none;
+        }
+        
+        .checkbox {
+            transform: scale(1.2);
+            margin-right: 8px;
+        }
+        
+        .status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #e9ecef;
+        }
+        
+        .status-item.success {
+            border-left-color: #28a745;
+        }
+        
+        .status-item.error {
+            border-left-color: #dc3545;
+        }
+        
+        .status-item.pending {
+            border-left-color: #ffc107;
         }
         
         .progress-bar {
             width: 100%;
-            height: 12px;
-            background: #ecf0f1;
-            border-radius: 6px;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin: 20px 0;
         }
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(45deg, #25D366, #128C7E);
+            background: linear-gradient(90deg, #28a745, #20c997);
             width: 0%;
             transition: width 0.3s ease;
         }
         
-        .progress-text {
-            text-align: center;
-            font-weight: 600;
-            color: #333;
+        .hidden {
+            display: none;
         }
         
         .alert {
             padding: 15px;
             border-radius: 8px;
-            margin: 15px 0;
-            font-weight: 500;
+            margin-bottom: 20px;
         }
         
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #d1e7dd;
+            border: 1px solid #badbcc;
+            color: #0f5132;
         }
         
-        .alert-error {
+        .alert-danger {
             background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            border: 1px solid #f5c2c7;
+            color: #842029;
         }
         
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffecb5;
+            color: #664d03;
         }
         
-        .instructions {
-            background: white;
-            padding: 20px;
+        .file-upload {
+            border: 2px dashed #e9ecef;
             border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #25D366;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
         
-        .instructions h4 {
-            color: #075E54;
-            margin-bottom: 10px;
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
         }
         
-        .instructions ul {
-            margin-left: 20px;
-            color: #666;
-        }
-        
-        .instructions li {
-            margin-bottom: 5px;
-        }
-        
-        .debug-info {
-            background: #f1f3f4;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 0.9em;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .version-info {
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
-            font-size: 0.75em;
-            color: #666;
-            opacity: 0.7;
-        }
-        
-        @media (max-width: 768px) {
-            .content {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .file-upload.dragover {
+            border-color: #28a745;
+            background: #f8fff9;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📱 Validador WhatsApp</h1>
-            <p>Sistema Web de Verificación • Números Móviles</p>
+            <h1>🚀 Envío Masivo WhatsApp</h1>
+            <p>Sistema de envío de mensajes a múltiples grupos usando TextMeBot API</p>
+            <p style="font-size: 0.9em; opacity: 0.8;">
+                📖 <a href="#" style="color: white;" onclick="showHelp()">Guía de Uso</a> | 
+                📁 <a href="#" style="color: white;" onclick="exportConfig()">Exportar Config</a> |
+                ⭐ <a href="https://github.com/tu-usuario/whatsapp-bulk-sender" target="_blank" style="color: white;">GitHub</a>
+            </p>
         </div>
         
-        <div class="content">
-            <!-- Sección de Formulario -->
-            <div class="form-section">
-                <h3 class="section-title">📝 Números a Verificar</h3>
-                
-                <div class="instructions">
-                    <h4>📋 Instrucciones:</h4>
-                    <ul>
-                        <li>Ingresa un número por línea</li>
-                        <li>Formato: 521XXXXXXXXXX (13 dígitos)</li>
-                        <li>Ejemplo: 5219621427412</li>
-                        <li>No incluyas espacios ni guiones</li>
-                    </ul>
-                </div>
-                
-                <div class="textarea-container">
-                    <label for="numbersInput">Números de teléfono:</label>
-                    <textarea 
-                        id="numbersInput" 
-                        class="numbers-input" 
-                        placeholder="5219621427412&#10;5219621356263&#10;5219621429573&#10;..."
-                    ></textarea>
-                </div>
-                
-                <div style="text-align: center;">
-                    <button class="btn" id="verifyBtn" onclick="verificarNumeros()">
-                        ✅ Verificar Números
-                    </button>
-                    <button class="btn btn-danger" onclick="limpiarTodo()">
-                        🧹 Limpiar Todo
-                    </button>
-                    <button class="btn btn-secondary" onclick="toggleDebug()">
-                        🔧 Debug
-                    </button>
-                </div>
-                
-                <div class="progress-container" id="progressContainer">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Verificando números...</div>
-                </div>
-                
-                <div id="alertContainer"></div>
-                <div class="debug-info" id="debugInfo"></div>
+        <div class="main-panel">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('config')">⚙️ Configuración</div>
+                <div class="tab" onclick="switchTab('groups')">👥 Grupos</div>
+                <div class="tab" onclick="switchTab('message')">💬 Mensaje</div>
+                <div class="tab" onclick="switchTab('send')">📤 Enviar</div>
             </div>
             
-            <!-- Sección de Resultados -->
-            <div class="results-section">
-                <h3 class="section-title">📊 Resultados</h3>
+            <!-- CONFIGURACIÓN -->
+            <div id="config-tab" class="tab-content">
+                <h3>Configuración de API</h3>
+                <div class="form-group">
+                    <label for="apikey">API Key de TextMeBot:</label>
+                    <input type="password" id="apikey" class="form-control" placeholder="Ingresa tu API Key" value="DAwFasxdhqor">
+                    <small style="color: #6c757d;">Obtén tu API Key en <a href="https://textmebot.com" target="_blank">textmebot.com</a></small>
+                </div>
                 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalNumbers">0</div>
-                        <div class="stat-label">Total</div>
+                <div class="form-group">
+                    <label for="delay">Retraso entre envíos (segundos):</label>
+                    <input type="number" id="delay" class="form-control" value="2" min="1" max="10">
+                    <small style="color: #6c757d;">Recomendado: 2-3 segundos para evitar limitaciones</small>
+                </div>
+                
+                <button class="btn btn-primary" onclick="testConnection()">🔄 Verificar Conexión</button>
+                <div id="connection-status"></div>
+            </div>
+            
+            <!-- GESTIÓN DE GRUPOS -->
+            <div id="groups-tab" class="tab-content hidden">
+                <h3>Gestión de Grupos</h3>
+                
+                <div class="form-group">
+                    <label for="invitation-code">Código de Invitación del Grupo:</label>
+                    <input type="text" id="invitation-code" class="form-control" placeholder="RTiy3mHqIDfD22H1InRR5E">
+                    <small style="color: #6c757d;">Obtén el código desde el enlace de invitación de WhatsApp</small>
+                </div>
+                
+                <button class="btn btn-primary" onclick="addGroup()">➕ Agregar Grupo</button>
+                <button class="btn btn-secondary" onclick="loadFromFile()">📁 Cargar desde Archivo</button>
+                <button class="btn btn-danger" onclick="clearAllGroups()">🗑️ Limpiar Todo</button>
+                
+                <div class="groups-container" id="groups-container">
+                    <div class="groups-header">
+                        <div class="groups-search">
+                            <input type="text" id="groups-search" placeholder="🔍 Buscar grupos por nombre..." onkeyup="filterGroups()">
+                        </div>
+                        <div class="groups-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="selectAll()">✅ Todos</button>
+                            <button class="btn btn-sm btn-secondary" onclick="selectNone()">❌ Ninguno</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleSort()" title="Cambiar orden">
+                                🔤 ${sortDirection === 'asc' ? 'A-Z' : 'Z-A'}
+                            </button>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="withWhatsApp">0</div>
-                        <div class="stat-label">Con WhatsApp</div>
+                    
+                    <div class="bulk-actions hidden" id="bulk-actions">
+                        <strong>Acciones masivas:</strong>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSelected()">🗑️ Eliminar seleccionados</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportSelected()">📤 Exportar seleccionados</button>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="withoutWhatsApp">0</div>
-                        <div class="stat-label">Sin WhatsApp</div>
+                    
+                    <div class="groups-list" id="groups-list">
+                        <!-- Los grupos se cargarán aquí dinámicamente -->
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pendingNumbers">0</div>
-                        <div class="stat-label">Pendientes</div>
+                    
+                    <div class="groups-stats">
+                        <span>Total: <strong id="total-groups">0</strong> grupos</span>
+                        <span>Seleccionados: <strong id="selected-groups">0</strong></span>
+                        <span>Filtrados: <strong id="filtered-groups">0</strong></span>
                     </div>
                 </div>
                 
-                <div style="text-align: center; margin: 15px 0;">
-                    <button class="btn btn-secondary" onclick="mostrarEstadisticas()">
-                        📈 Ver Estadísticas
-                    </button>
-                    <button class="btn btn-secondary" onclick="exportarResultados()">
-                        📄 Exportar CSV
-                    </button>
+                <div class="status-panel" id="groups-status">
+                    <h4>Grupos Configurados: <span id="groups-count">0</span></h4>
+                    <p>Selecciona los grupos a los que deseas enviar el mensaje</p>
+                </div>
+            </div>
+            
+            <!-- MENSAJE -->
+            <div id="message-tab" class="tab-content hidden">
+                <h3>Configurar Mensaje</h3>
+                
+                <div class="form-group">
+                    <label for="message-type">Tipo de Mensaje:</label>
+                    <select id="message-type" class="form-control" onchange="toggleMessageType()">
+                        <option value="text">📝 Solo Texto</option>
+                        <option value="image">🖼️ Texto + Imagen</option>
+                        <option value="document">📄 Texto + Documento</option>
+                        <option value="audio">🎵 Audio</option>
+                        <option value="video">🎬 Video</option>
+                    </select>
                 </div>
                 
-                <div class="results-list" id="resultsList">
-                    <div style="padding: 40px; text-align: center; color: #666;">
-                        No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
-                    </div>
+                <div class="form-group">
+                    <label for="message-text">Texto del Mensaje:</label>
+                    <textarea id="message-text" class="form-control" rows="6" placeholder="Escribe tu mensaje aquí..."></textarea>
+                    <small style="color: #6c757d;">Puedes usar variables: {grupo}, {fecha}, {hora}</small>
+                </div>
+                
+                <div id="file-section" class="form-group hidden">
+                    <label for="file-url">URL del Archivo:</label>
+                    <input type="url" id="file-url" class="form-control" placeholder="https://ejemplo.com/archivo.jpg">
+                    <small style="color: #6c757d;">El archivo debe estar disponible públicamente en internet</small>
+                </div>
+                
+                <div class="file-upload" onclick="document.getElementById('template-file').click()">
+                    <p>📤 Clic para subir plantilla de mensaje</p>
+                    <input type="file" id="template-file" accept=".txt" style="display: none;" onchange="loadTemplate()">
+                </div>
+                
+                <button class="btn btn-primary" onclick="previewMessage()">👁️ Vista Previa</button>
+                <button class="btn btn-secondary" onclick="saveTemplate()">💾 Guardar Plantilla</button>
+                
+                <div id="message-preview" class="status-panel hidden">
+                    <h4>Vista Previa del Mensaje:</h4>
+                    <div id="preview-content"></div>
+                </div>
+            </div>
+            
+            <!-- ENVÍO -->
+            <div id="send-tab" class="tab-content hidden">
+                <h3>Envío Masivo</h3>
+                
+                <div class="alert alert-warning">
+                    <strong>⚠️ Importante:</strong> Asegúrate de ser miembro de todos los grupos seleccionados. 
+                    TextMeBot puede banear tu número si intentas enviar a grupos donde no perteneces.
+                </div>
+                
+                <div id="send-summary">
+                    <h4>Resumen del Envío:</h4>
+                    <p><strong>Grupos seleccionados:</strong> <span id="selected-groups-count">0</span></p>
+                    <p><strong>Tipo de mensaje:</strong> <span id="message-type-summary">-</span></p>
+                    <p><strong>Retraso configurado:</strong> <span id="delay-summary">-</span> segundos</p>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p id="progress-text">Listo para enviar</p>
+                
+                <button class="btn btn-success" id="send-btn" onclick="startSending()">🚀 Iniciar Envío Masivo</button>
+                <button class="btn btn-danger hidden" id="stop-btn" onclick="stopSending()">⏹️ Detener Envío</button>
+                
+                <div class="status-panel" id="sending-status">
+                    <h4>Estado del Envío:</h4>
+                    <div id="status-list"></div>
                 </div>
             </div>
         </div>
-        
-        <div class="version-info">v2.1.0</div>
     </div>
 
     <script>
         // Variables globales
-        var numerosProcesados = [];
-        var estadisticas = {
-            total: 0,
-            conWhatsApp: 0,
-            sinWhatsApp: 0,
-            pendientes: 0
-        };
-
-        // URL del webhook de n8n
-        var webhookUrl = "https://devwebhookn8n.m4metadryve.mx/webhook/VerificaciónWhatsApp_Web";
-        var debugMode = false;
-
-        function logDebug(mensaje, data) {
-            if (debugMode) {
-                var debugInfo = document.getElementById('debugInfo');
-                var timestamp = new Date().toLocaleTimeString();
-                var logEntry = '[' + timestamp + '] ' + mensaje;
-                if (data) {
-                    logEntry += '\n' + JSON.stringify(data, null, 2);
+        let groups = [];
+        let sendingProcess = null;
+        let currentTab = 'config';
+        let filteredGroups = [];
+        let isCardView = false;
+        let sortDirection = 'asc'; // 'asc' o 'desc'
+        
+        // Ordenar grupos por nombre
+        function sortGroups() {
+            groups.sort((a, b) => {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                
+                if (sortDirection === 'asc') {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
                 }
-                debugInfo.textContent += logEntry + '\n\n';
-                debugInfo.scrollTop = debugInfo.scrollHeight;
-            }
-            console.log(mensaje, data);
+            });
         }
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            var debugInfo = document.getElementById('debugInfo');
-            debugInfo.style.display = debugMode ? 'block' : 'none';
-            if (debugMode) {
-                debugInfo.textContent = '=== DEBUG MODE ACTIVADO v2.1.0 ===\n\n';
-            }
-        }
-
-        function mostrarAlerta(mensaje, tipo) {
-            var alertContainer = document.getElementById('alertContainer');
-            var alert = document.createElement('div');
-            alert.className = 'alert alert-' + tipo;
-            alert.textContent = mensaje;
+        
+        // Renderizar lista de grupos
+        function renderGroups() {
+            const container = document.getElementById('groups-list');
+            if (!container) return;
             
-            alertContainer.innerHTML = '';
-            alertContainer.appendChild(alert);
+            // Ordenar grupos antes de renderizar
+            sortGroups();
             
-            // Auto-ocultar después de 5 segundos
-            setTimeout(function() {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
+            container.innerHTML = '';
+            
+            // Aplicar filtro si existe
+            const searchTerm = document.getElementById('groups-search')?.value.toLowerCase() || '';
+            filteredGroups = groups.filter(group => 
+                group.name.toLowerCase().includes(searchTerm) ||
+                group.id.toLowerCase().includes(searchTerm) ||
+                group.invitationCode.toLowerCase().includes(searchTerm)
+            );
+            
+            // Ordenar también los grupos filtrados
+            filteredGroups.sort((a, b) => {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                
+                if (sortDirection === 'asc') {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
                 }
-            }, 5000);
-        }
-
-        function actualizarEstadisticas() {
-            document.getElementById('totalNumbers').textContent = estadisticas.total;
-            document.getElementById('withWhatsApp').textContent = estadisticas.conWhatsApp;
-            document.getElementById('withoutWhatsApp').textContent = estadisticas.sinWhatsApp;
-            document.getElementById('pendingNumbers').textContent = estadisticas.pendientes;
-        }
-
-        function mostrarProgreso(visible) {
-            var progressContainer = document.getElementById('progressContainer');
-            progressContainer.style.display = visible ? 'block' : 'none';
-        }
-
-        function actualizarProgreso(porcentaje) {
-            document.getElementById('progressFill').style.width = porcentaje + '%';
-            document.getElementById('progressText').textContent = 'Verificando números... ' + porcentaje + '%';
-        }
-
-        function validarNumero(numero) {
-            // Limpiar el número de espacios y caracteres especiales
-            var numeroLimpio = numero.replace(/[^\d]/g, '');
-            
-            // Validar formato: debe tener 13 dígitos y empezar con 521
-            if (numeroLimpio.length === 13 && numeroLimpio.indexOf('521') === 0) {
-                return numeroLimpio;
-            }
-            
-            return null;
-        }
-
-        function procesarNumeros() {
-            var textarea = document.getElementById('numbersInput');
-            var texto = textarea.value.trim();
-            
-            if (!texto) {
-                mostrarAlerta('⚠️ Por favor ingresa al menos un número de teléfono.', 'error');
-                return [];
-            }
-            
-            var lineas = texto.split('\n');
-            var numerosValidos = [];
-            var numerosInvalidos = [];
-            
-            for (var i = 0; i < lineas.length; i++) {
-                var numeroLimpio = lineas[i].trim();
-                if (numeroLimpio) {
-                    var numeroValidado = validarNumero(numeroLimpio);
-                    if (numeroValidado) {
-                        numerosValidos.push({
-                            numero: numeroValidado,
-                            estado: 'pendiente',
-                            resultado: ''
-                        });
-                    } else {
-                        numerosInvalidos.push('Línea ' + (i + 1) + ': ' + numeroLimpio);
-                    }
-                }
-            }
-            
-            if (numerosInvalidos.length > 0) {
-                mostrarAlerta('⚠️ Números inválidos encontrados: ' + numerosInvalidos.join(', '), 'error');
-            }
-            
-            logDebug('Números procesados:', {
-                validos: numerosValidos,
-                invalidos: numerosInvalidos
             });
             
-            return numerosValidos;
-        }
-
-        function renderizarResultados() {
-            var resultsList = document.getElementById('resultsList');
+            if (filteredGroups.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        ${groups.length === 0 ? '📭 No hay grupos agregados' : '🔍 No se encontraron grupos con ese filtro'}
+                    </div>
+                `;
+            }
             
-            if (numerosProcesados.length === 0) {
-                resultsList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No hay resultados aún. Ingresa números y haz clic en "Verificar Números".</div>';
+            filteredGroups.forEach((group, index) => {
+                const originalIndex = groups.indexOf(group);
+                const item = document.createElement('div');
+                item.className = 'group-item';
+                
+                item.innerHTML = `
+                    <input type="checkbox" class="group-checkbox" ${group.selected ? 'checked' : ''} 
+                           onchange="toggleGroupSelection(${originalIndex})" id="group-${originalIndex}">
+                    <div class="group-info">
+                        <div class="group-name" title="${group.name}">${group.name}</div>
+                        <div class="group-details">
+                            <span class="group-detail" title="ID: ${group.id}">ID: ${group.id}</span>
+                            <span class="group-detail" title="Código: ${group.invitationCode}">Código: ${group.invitationCode}</span>
+                            ${group.manual ? '<span style="color: #ffc107;">📝 Manual</span>' : '<span style="color: #28a745;">✅ Validado</span>'}
+                        </div>
+                    </div>
+                    <div class="group-actions">
+                        <button class="btn btn-xs btn-outline" onclick="editGroup(${originalIndex})" title="Editar">✏️</button>
+                        <button class="btn btn-xs btn-outline" onclick="removeGroup(${originalIndex})" title="Eliminar">🗑️</button>
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+            
+            updateGroupsStats();
+            updateBulkActions();
+        }
+        
+        // Actualizar estadísticas
+        function updateGroupsStats() {
+            const totalGroups = groups.length;
+            const selectedGroups = groups.filter(g => g.selected).length;
+            const filteredCount = filteredGroups.length;
+            
+            document.getElementById('total-groups').textContent = totalGroups;
+            document.getElementById('selected-groups').textContent = selectedGroups;
+            document.getElementById('filtered-groups').textContent = filteredCount;
+            document.getElementById('groups-count').textContent = totalGroups;
+        }
+        
+        // Filtrar grupos
+        function filterGroups() {
+            renderGroups();
+        }
+        
+        // Alternar orden de clasificación
+        function toggleSort() {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            renderGroups();
+            saveConfig();
+        }
+        
+        // Seleccionar todos
+        function selectAll() {
+            filteredGroups.forEach(group => {
+                group.selected = true;
+            });
+            renderGroups();
+            saveConfig();
+        }
+        
+        // Deseleccionar todos
+        function selectNone() {
+            filteredGroups.forEach(group => {
+                group.selected = false;
+            });
+            renderGroups();
+            saveConfig();
+        }
+        
+        // Editar grupo
+        function editGroup(index) {
+            const group = groups[index];
+            const newName = prompt('Nuevo nombre del grupo:', group.name);
+            if (newName && newName.trim()) {
+                groups[index].name = newName.trim();
+                renderGroups();
+                saveConfig();
+            }
+        }
+        
+        // Actualizar acciones masivas
+        function updateBulkActions() {
+            const selectedCount = groups.filter(g => g.selected).length;
+            const bulkActions = document.getElementById('bulk-actions');
+            
+            if (selectedCount > 1) {
+                bulkActions.classList.remove('hidden');
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+        
+        // Eliminar seleccionados
+        function deleteSelected() {
+            const selectedGroups = groups.filter(g => g.selected);
+            if (selectedGroups.length === 0) {
+                alert('No hay grupos seleccionados');
                 return;
             }
             
-            var html = '';
-            for (var i = 0; i < numerosProcesados.length; i++) {
-                var item = numerosProcesados[i];
-                var statusClass = 'status-pending';
-                var statusText = 'Pendiente';
-                
-                if (item.estado === 'completado') {
-                    statusClass = item.resultado === 'Tiene WhatsApp' ? 'status-success' : 'status-error';
-                    statusText = item.resultado;
-                }
-                
-                html += '<div class="result-item"><span class="result-number">' + item.numero + '</span><span class="result-status ' + statusClass + '">' + statusText + '</span></div>';
+            if (confirm(`¿Eliminar ${selectedGroups.length} grupos seleccionados?`)) {
+                groups = groups.filter(g => !g.selected);
+                renderGroups();
+                saveConfig();
+            }
+        }
+        
+        // Exportar seleccionados
+        function exportSelected() {
+            const selectedGroups = groups.filter(g => g.selected);
+            if (selectedGroups.length === 0) {
+                alert('No hay grupos seleccionados');
+                return;
             }
             
-            resultsList.innerHTML = html;
-        }
-
-        function verificarNumerosConWebhook(numeros) {
-            logDebug('Enviando números al webhook:', numeros);
-            
-            var payload = {
-                numeros: [],
-                origen: 'WebForm',
-                timestamp: new Date().toISOString()
+            const exportData = {
+                groups: selectedGroups,
+                exportDate: new Date().toISOString(),
+                totalGroups: selectedGroups.length
             };
             
-            // Extraer solo los números
-            for (var i = 0; i < numeros.length; i++) {
-                payload.numeros.push(numeros[i].numero);
-            }
-            
-            logDebug('Payload a enviar:', payload);
-            logDebug('URL del webhook:', webhookUrl);
-            
-            return fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(function(response) {
-                logDebug('Respuesta HTTP recibida - Status:', response.status);
-                logDebug('Content-Type de respuesta:', response.headers.get('content-type'));
-                
-                if (!response.ok) {
-                    throw new Error('Error HTTP: ' + response.status + ' - ' + response.statusText);
-                }
-                
-                // El webhook devuelve texto con formato JSON (debido a configuración Text)
-                return response.text();
-            })
-            .then(function(textoRespuesta) {
-                logDebug('Respuesta como texto recibida:', textoRespuesta);
-                
-                try {
-                    // Parsear el texto como JSON
-                    var datosJSON = JSON.parse(textoRespuesta);
-                    logDebug('Texto parseado exitosamente como JSON:', datosJSON);
-                    return datosJSON;
-                } catch (error) {
-                    logDebug('Error parseando respuesta como JSON:', error);
-                    throw new Error('Respuesta no es JSON válido: ' + error.message);
-                }
-            })
-            .catch(function(error) {
-                logDebug('Error en webhook:', error);
-                throw error;
-            });
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `grupos-seleccionados-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
-
-        function procesarRespuestaWebhook(respuesta) {
-            logDebug('Procesando respuesta del webhook:', respuesta);
+        
+        // Verificar conexión con la API
+        async function testConnection() {
+            const apikey = document.getElementById('apikey').value;
+            if (!apikey) {
+                showAlert('connection-status', 'danger', 'Por favor ingresa tu API Key');
+                return;
+            }
             
             try {
-                // Verificar estructura de respuesta esperada
-                if (!respuesta || respuesta.status !== 'success') {
-                    throw new Error('Respuesta inválida del webhook');
-                }
+                showAlert('connection-status', 'warning', 'Verificando conexión...');
                 
-                // Extraer resultados - puede venir como string JSON dentro de resultados
-                var resultadosRaw = respuesta.resultados;
-                var resultados = [];
+                // Intentar con proxy CORS
+                const proxyUrl = 'https://api.allorigins.win/get?url=';
+                const targetUrl = `http://api.textmebot.com/send.php?recipient=123456789&apikey=${encodeURIComponent(apikey)}&text=test&json=yes`;
+                const testUrl = proxyUrl + encodeURIComponent(targetUrl);
                 
-                if (typeof resultadosRaw === 'string') {
-                    // Si resultados es un string JSON, parsearlo
-                    try {
-                        resultados = JSON.parse(resultadosRaw);
-                        logDebug('Resultados parseados desde string:', resultados);
-                    } catch (e) {
-                        logDebug('Error parseando resultados como JSON:', e);
-                        throw new Error('Resultados no son JSON válido');
-                    }
-                } else if (Array.isArray(resultadosRaw)) {
-                    // Si ya es un array, usarlo directamente
-                    resultados = resultadosRaw;
-                    logDebug('Resultados son array directo:', resultados);
-                } else {
-                    throw new Error('Formato de resultados no reconocido');
-                }
+                console.log('Testing with proxy URL:', testUrl);
                 
-                if (!Array.isArray(resultados) || resultados.length === 0) {
-                    throw new Error('No se encontraron resultados válidos');
-                }
+                const response = await fetch(testUrl);
+                const data = await response.json();
+                const result = data.contents;
                 
-                logDebug('Resultados finales a procesar:', resultados);
+                console.log('Test response:', result);
                 
-                // Procesar cada resultado y mapear con números enviados
-                for (var i = 0; i < numerosProcesados.length; i++) {
-                    var numeroEnviado = numerosProcesados[i];
-                    
-                    // Buscar resultado correspondiente por row_number
-                    var resultadoEncontrado = null;
-                    for (var j = 0; j < resultados.length; j++) {
-                        if (resultados[j].row_number === (i + 1)) {
-                            resultadoEncontrado = resultados[j];
-                            break;
-                        }
-                    }
-                    
-                    if (resultadoEncontrado) {
-                        numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = resultadoEncontrado.Resultado;
-                        
-                        // Actualizar estadísticas
-                        if (resultadoEncontrado.Resultado === 'Tiene WhatsApp') {
-                            estadisticas.conWhatsApp++;
-                        } else {
-                            estadisticas.sinWhatsApp++;
-                        }
-                        estadisticas.pendientes--;
-                        
-                        logDebug('Número procesado:', {
-                            numero: numerosProcesados[i].numero,
-                            resultado: resultadoEncontrado.Resultado
-                        });
+                try {
+                    const jsonResult = JSON.parse(result);
+                    if (jsonResult.status === 'error' && jsonResult.comment === 'Invalid APIkey') {
+                        showAlert('connection-status', 'danger', '❌ API Key inválida');
                     } else {
-                        // Si no se encuentra resultado específico, marcar como error
-                        numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = 'Error al verificar';
-                        estadisticas.sinWhatsApp++;
-                        estadisticas.pendientes--;
-                        
-                        logDebug('Número sin resultado encontrado:', numerosProcesados[i].numero);
+                        showAlert('connection-status', 'success', '✅ Conexión exitosa - API Key válida');
+                        saveConfig();
+                    }
+                } catch (parseError) {
+                    // Si no es JSON, verificar por texto
+                    if (result.includes('Invalid Premium APIkey') || result.includes('Invalid APIkey')) {
+                        showAlert('connection-status', 'danger', '❌ API Key inválida');
+                    } else if (result.includes('Failed') && result.includes('Invalid Destination')) {
+                        showAlert('connection-status', 'success', '✅ Conexión exitosa - API Key válida (número de prueba inválido como se esperaba)');
+                        saveConfig();
+                    } else if (result.includes('Success') || result.includes('success')) {
+                        showAlert('connection-status', 'success', '✅ Conexión exitosa - API Key válida');
+                        saveConfig();
+                    } else {
+                        showAlert('connection-status', 'success', '✅ Conexión exitosa - API Key válida');
+                        saveConfig();
                     }
                 }
-                
-                logDebug('Estadísticas finales:', estadisticas);
-                
-                // Actualizar interfaz
-                actualizarEstadisticas();
-                renderizarResultados();
-                mostrarAlerta('✅ Verificación completada: ' + estadisticas.conWhatsApp + ' con WhatsApp, ' + estadisticas.sinWhatsApp + ' sin WhatsApp.', 'success');
-                
             } catch (error) {
-                logDebug('Error procesando respuesta del webhook:', error);
-                mostrarAlerta('❌ Error procesando resultados: ' + error.message, 'error');
+                console.error('Connection error:', error);
+                showAlert('connection-status', 'warning', 
+                    `⚠️ No se pudo verificar la conexión por CORS. Opciones:<br>
+                    1. <strong>Modo Manual:</strong> <a href="#" onclick="enableManualMode()">Agregar grupos manualmente</a><br>
+                    2. <strong>Extensión CORS:</strong> Instalar extensión que desactive CORS<br>
+                    3. El sistema puede funcionar para envío real sin validación`);
+            }
+        }
+        
+        // Modo manual sin validación
+        function enableManualMode() {
+            showAlert('connection-status', 'success', 
+                '✅ Modo manual activado. Puedes agregar grupos directamente con sus IDs o códigos de invitación.');
+            saveConfig();
+        }
+        
+        // Agregar grupo
+        async function addGroup() {
+            const invitationCode = document.getElementById('invitation-code').value.trim();
+            const apikey = document.getElementById('apikey').value;
+            
+            if (!invitationCode || !apikey) {
+                alert('Por favor completa el código de invitación y API Key');
+                return;
+            }
+            
+            try {
+                // Intentar con proxy CORS
+                const proxyUrl = 'https://api.allorigins.win/get?url=';
+                const targetUrl = `http://api.textmebot.com/send.php?apikey=${encodeURIComponent(apikey)}&group_info=${encodeURIComponent(invitationCode)}&json=yes`;
+                const requestUrl = proxyUrl + encodeURIComponent(targetUrl);
                 
-                // Marcar todos los números pendientes como error
-                for (var i = 0; i < numerosProcesados.length; i++) {
-                    if (numerosProcesados[i].estado === 'pendiente') {
-                        numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = 'Error al procesar';
-                        estadisticas.sinWhatsApp++;
-                        estadisticas.pendientes--;
+                const response = await fetch(requestUrl);
+                const data = await response.json();
+                const resultText = data.contents;
+                
+                console.log('Group info response:', resultText);
+                
+                try {
+                    const result = JSON.parse(resultText);
+                    
+                    if (result.status) {
+                        const group = {
+                            id: result.group_id,
+                            name: result.subject,
+                            invitationCode: invitationCode,
+                            selected: true
+                        };
+                        
+                            // Evitar duplicados
+                            if (!groups.find(g => g.id === group.id)) {
+                                groups.push(group);
+                                renderGroups(); // Esto automáticamente ordenará por nombre
+                                document.getElementById('invitation-code').value = '';
+                                saveConfig();
+                                alert(`Grupo "${group.name}" agregado y ordenado correctamente.`);
+                            } else {
+                                alert('Este grupo ya está agregado');
+                            }
+                    } else {
+                        alert('Error al obtener información del grupo: ' + (result.msg || result.comment || 'Error desconocido'));
+                    }
+                } catch (parseError) {
+                    // Modo manual: agregar grupo sin validación
+                    const groupName = prompt('No se pudo validar el grupo automáticamente. ¿Cuál es el nombre del grupo?', 'Grupo Manual');
+                    if (groupName) {
+                        addGroupManually(invitationCode, groupName);
                     }
                 }
-                actualizarEstadisticas();
-                renderizarResultados();
+            } catch (error) {
+                console.error('Error:', error);
+                // Modo manual como fallback
+                const groupName = prompt('Error de conexión. ¿Cuál es el nombre del grupo para agregarlo manualmente?', 'Grupo Manual');
+                if (groupName) {
+                    addGroupManually(invitationCode, groupName);
+                }
             }
         }
-
-        function verificarNumeros() {
-            var numeros = procesarNumeros();
+        
+        // Agregar grupo manualmente sin validación
+        function addGroupManually(invitationCode, groupName) {
+            // Generar ID ficticio para grupos manuales
+            const group = {
+                id: `manual_${Date.now()}@g.us`,
+                name: groupName,
+                invitationCode: invitationCode,
+                selected: true,
+                manual: true
+            };
             
-            if (numeros.length === 0) {
+            groups.push(group);
+            renderGroups(); // Esto automáticamente ordenará por nombre
+            document.getElementById('invitation-code').value = '';
+            saveConfig();
+            
+            alert(`Grupo "${groupName}" agregado manualmente. Los grupos se han ordenado por nombre.`);
+        }
+        
+        // Gestión de pestañas
+        function switchTab(tab) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Mostrar pestaña seleccionada
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+            event.target.classList.add('active');
+            currentTab = tab;
+            
+            if (tab === 'send') {
+                updateSendSummary();
+            }
+        }
+        
+        // Toggle selección de grupo
+        function toggleGroupSelection(index) {
+            groups[index].selected = !groups[index].selected;
+            renderGroups();
+            saveConfig();
+        }
+        
+        // Eliminar grupo
+        function removeGroup(index) {
+            if (confirm(`¿Eliminar el grupo "${groups[index].name}"?`)) {
+                groups.splice(index, 1);
+                renderGroups();
+                saveConfig();
+            }
+        }
+        
+        // Limpiar todos los grupos
+        function clearAllGroups() {
+            if (confirm('¿Eliminar todos los grupos?')) {
+                groups = [];
+                renderGroups();
+                saveConfig();
+            }
+        }
+        
+        // Cambiar tipo de mensaje
+        function toggleMessageType() {
+            const type = document.getElementById('message-type').value;
+            const fileSection = document.getElementById('file-section');
+            
+            if (type === 'text') {
+                fileSection.classList.add('hidden');
+            } else {
+                fileSection.classList.remove('hidden');
+                const input = document.getElementById('file-url');
+                input.placeholder = getPlaceholderForType(type);
+            }
+        }
+        
+        function getPlaceholderForType(type) {
+            const placeholders = {
+                'image': 'https://ejemplo.com/imagen.jpg',
+                'document': 'https://ejemplo.com/documento.pdf',
+                'audio': 'https://ejemplo.com/audio.mp3',
+                'video': 'https://ejemplo.com/video.mp4'
+            };
+            return placeholders[type] || '';
+        }
+        
+        // Vista previa del mensaje
+        function previewMessage() {
+            const text = document.getElementById('message-text').value;
+            const type = document.getElementById('message-type').value;
+            const fileUrl = document.getElementById('file-url').value;
+            
+            let preview = text.replace('{grupo}', 'Grupo de Ejemplo')
+                             .replace('{fecha}', new Date().toLocaleDateString())
+                             .replace('{hora}', new Date().toLocaleTimeString());
+            
+            let content = `<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">`;
+            content += `<strong>Tipo:</strong> ${type}<br>`;
+            content += `<strong>Texto:</strong><br>${preview.replace(/\n/g, '<br>')}`;
+            
+            if (type !== 'text' && fileUrl) {
+                content += `<br><strong>Archivo:</strong> ${fileUrl}`;
+            }
+            content += `</div>`;
+            
+            document.getElementById('preview-content').innerHTML = content;
+            document.getElementById('message-preview').classList.remove('hidden');
+        }
+        
+        // Iniciar envío masivo
+        async function startSending() {
+            const selectedGroups = groups.filter(g => g.selected);
+            if (selectedGroups.length === 0) {
+                alert('Selecciona al menos un grupo');
                 return;
             }
             
-            // Reiniciar variables
-            numerosProcesados = numeros;
-            estadisticas = {
-                total: numeros.length,
-                conWhatsApp: 0,
-                sinWhatsApp: 0,
-                pendientes: numeros.length
-            };
+            const apikey = document.getElementById('apikey').value;
+            const text = document.getElementById('message-text').value;
+            const delay = parseInt(document.getElementById('delay').value) * 1000;
             
-            actualizarEstadisticas();
-            renderizarResultados();
+            if (!apikey || !text) {
+                alert('Completa la configuración y el mensaje');
+                return;
+            }
             
-            // Deshabilitar botón y mostrar progreso
-            document.getElementById('verifyBtn').disabled = true;
-            mostrarProgreso(true);
-            actualizarProgreso(25);
+            document.getElementById('send-btn').classList.add('hidden');
+            document.getElementById('stop-btn').classList.remove('hidden');
             
-            mostrarAlerta('🚀 Iniciando verificación de ' + numeros.length + ' número(s)...', 'info');
+            const statusList = document.getElementById('status-list');
+            statusList.innerHTML = '';
             
-            // Llamar al webhook real
-            verificarNumerosConWebhook(numeros)
-                .then(function(resultado) {
-                    actualizarProgreso(75);
-                    mostrarAlerta('✅ Respuesta recibida del sistema de verificación.', 'info');
+            let sent = 0;
+            const total = selectedGroups.length;
+            
+            for (let i = 0; i < selectedGroups.length; i++) {
+                if (!sendingProcess) break; // Si se detuvo el proceso
+                
+                const group = selectedGroups[i];
+                const statusItem = document.createElement('div');
+                statusItem.className = 'status-item pending';
+                statusItem.innerHTML = `
+                    <span>${group.name}</span>
+                    <span>Enviando...</span>
+                `;
+                statusList.appendChild(statusItem);
+                
+                try {
+                    const messageText = text.replace('{grupo}', group.name)
+                                          .replace('{fecha}', new Date().toLocaleDateString())
+                                          .replace('{hora}', new Date().toLocaleTimeString());
                     
-                    // Procesar resultados reales del webhook
-                    setTimeout(function() {
-                        actualizarProgreso(100);
-                        procesarRespuestaWebhook(resultado);
-                    }, 500);
-                })
-                .catch(function(error) {
-                    mostrarAlerta('❌ Error al verificar números: ' + error.message, 'error');
-                    logDebug('Error completo en verificación:', error);
+                    const type = document.getElementById('message-type').value;
+                    const fileUrl = document.getElementById('file-url').value;
                     
-                    // Marcar todos como error en caso de fallo de conexión
-                    for (var i = 0; i < numerosProcesados.length; i++) {
-                        numerosProcesados[i].estado = 'completado';
-                        numerosProcesados[i].resultado = 'Error de conexión';
-                        estadisticas.sinWhatsApp++;
-                        estadisticas.pendientes--;
+                    // Usar proxy CORS para envío
+                    const proxyUrl = 'https://api.allorigins.win/get?url=';
+                    
+                    // Construir URL según la documentación
+                    let targetUrl = `http://api.textmebot.com/send.php?recipient=${encodeURIComponent(group.id)}&apikey=${encodeURIComponent(apikey)}&text=${encodeURIComponent(messageText)}&json=yes`;
+                    
+                    // Agregar archivos según el tipo
+                    if (type !== 'text' && fileUrl) {
+                        if (type === 'image' || type === 'video') {
+                            targetUrl += `&file=${encodeURIComponent(fileUrl)}`;
+                        } else if (type === 'audio') {
+                            targetUrl += `&audio=${encodeURIComponent(fileUrl)}`;
+                        } else if (type === 'document') {
+                            targetUrl += `&document=${encodeURIComponent(fileUrl)}`;
+                        }
                     }
-                    actualizarEstadisticas();
-                    renderizarResultados();
-                })
-                .finally(function() {
-                    document.getElementById('verifyBtn').disabled = false;
-                    mostrarProgreso(false);
-                });
+                    
+                    const sendUrl = proxyUrl + encodeURIComponent(targetUrl);
+                    console.log('Sending to:', sendUrl);
+                    
+                    const response = await fetch(sendUrl);
+                    const data = await response.json();
+                    const resultText = data.contents;
+                    
+                    console.log('Send response:', resultText);
+                    
+                    let success = false;
+                    let errorMessage = 'Error desconocido';
+                    
+                    try {
+                        const result = JSON.parse(resultText);
+                        if (result.status === 'success') {
+                            success = true;
+                        } else {
+                            errorMessage = result.comment || 'Error en el envío';
+                        }
+                    } catch (parseError) {
+                        // Si no es JSON, verificar por texto HTML
+                        if (resultText.includes('Success!') || resultText.includes('success')) {
+                            success = true;
+                        } else if (resultText.includes('Failed') || resultText.includes('ERROR')) {
+                            errorMessage = 'Error en el envío (ver consola para detalles)';
+                        } else {
+                            success = true; // Asumir éxito si no hay error explícito
+                        }
+                    }
+                    
+                    if (success) {
+                        statusItem.className = 'status-item success';
+                        statusItem.innerHTML = `
+                            <span>${group.name}</span>
+                            <span>✅ Enviado</span>
+                        `;
+                        sent++;
+                    } else {
+                        statusItem.className = 'status-item error';
+                        statusItem.innerHTML = `
+                            <span>${group.name}</span>
+                            <span>❌ Error: ${errorMessage}</span>
+                        `;
+                    }
+                } catch (error) {
+                    statusItem.className = 'status-item error';
+                    statusItem.innerHTML = `
+                        <span>${group.name}</span>
+                        <span>❌ Error: ${error.message}</span>
+                    `;
+                }
+                
+                // Actualizar progreso
+                const progress = ((i + 1) / total) * 100;
+                document.getElementById('progress-fill').style.width = progress + '%';
+                document.getElementById('progress-text').textContent = 
+                    `Progreso: ${i + 1}/${total} (${sent} exitosos)`;
+                
+                // Esperar antes del siguiente envío
+                if (i < selectedGroups.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            
+            document.getElementById('send-btn').classList.remove('hidden');
+            document.getElementById('stop-btn').classList.add('hidden');
+            document.getElementById('progress-text').textContent = 
+                `Completado: ${sent}/${total} mensajes enviados`;
+            
+            sendingProcess = true; // Reset para próximo envío
         }
-
-        function limpiarTodo() {
-            document.getElementById('numbersInput').value = '';
-            numerosProcesados = [];
-            estadisticas = {
-                total: 0,
-                conWhatsApp: 0,
-                sinWhatsApp: 0,
-                pendientes: 0
+        
+        // Detener envío
+        function stopSending() {
+            sendingProcess = null;
+            document.getElementById('send-btn').classList.remove('hidden');
+            document.getElementById('stop-btn').classList.add('hidden');
+            document.getElementById('progress-text').textContent = 'Envío detenido';
+        }
+        
+        // Actualizar resumen de envío
+        function updateSendSummary() {
+            const selectedCount = groups.filter(g => g.selected).length;
+            const messageType = document.getElementById('message-type').value;
+            const delay = document.getElementById('delay').value;
+            
+            document.getElementById('selected-groups-count').textContent = selectedCount;
+            document.getElementById('message-type-summary').textContent = messageType;
+            document.getElementById('delay-summary').textContent = delay;
+        }
+        
+        // Mostrar alertas
+        function showAlert(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+        
+        // Guardar configuración
+        function saveConfig() {
+            const config = {
+                apikey: document.getElementById('apikey').value,
+                delay: document.getElementById('delay').value,
+                groups: groups,
+                messageText: document.getElementById('message-text').value,
+                messageType: document.getElementById('message-type').value,
+                fileUrl: document.getElementById('file-url').value,
+                sortDirection: sortDirection
+            };
+            localStorage.setItem('whatsapp-bulk-config', JSON.stringify(config));
+        }
+        
+        // Cargar configuración
+        function loadConfig() {
+            const saved = localStorage.getItem('whatsapp-bulk-config');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('apikey').value = config.apikey || '';
+                document.getElementById('delay').value = config.delay || 2;
+                groups = config.groups || [];
+                document.getElementById('message-text').value = config.messageText || '';
+                document.getElementById('message-type').value = config.messageType || 'text';
+                document.getElementById('file-url').value = config.fileUrl || '';
+                sortDirection = config.sortDirection || 'asc';
+                
+                renderGroups();
+                toggleMessageType();
+            }
+        }
+        
+        // Guardar plantilla
+        function saveTemplate() {
+            const text = document.getElementById('message-text').value;
+            if (!text) {
+                alert('Escribe un mensaje primero');
+                return;
+            }
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'plantilla-mensaje.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Cargar plantilla
+        function loadTemplate() {
+            const file = document.getElementById('template-file').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('message-text').value = e.target.result;
+                    saveConfig();
+                };
+                reader.readAsText(file);
+            }
+        }
+        
+        // Cargar grupos desde archivo
+        function loadFromFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,.txt';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        try {
+                            let data;
+                            if (file.name.endsWith('.json')) {
+                                data = JSON.parse(event.target.result);
+                                if (Array.isArray(data)) {
+                                    groups = data;
+                                } else if (data.groups) {
+                                    groups = data.groups;
+                                }
+                            } else {
+                                // Archivo de texto con códigos de invitación
+                                const codes = event.target.result.split('\n').filter(line => line.trim());
+                                alert(`Se cargarán ${codes.length} códigos. Esto puede tomar unos momentos.`);
+                                loadGroupsFromCodes(codes);
+                                return;
+                            }
+                            renderGroups();
+                            saveConfig();
+                            alert('Grupos cargados exitosamente');
+                        } catch (error) {
+                            alert('Error al cargar el archivo: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+        
+        // Cargar grupos desde códigos de invitación
+        async function loadGroupsFromCodes(codes) {
+            const apikey = document.getElementById('apikey').value;
+            if (!apikey) {
+                alert('Configura tu API Key primero');
+                return;
+            }
+            
+            for (let i = 0; i < codes.length; i++) {
+                const code = codes[i].trim();
+                if (!code) continue;
+                
+                try {
+                    const response = await fetch(`${window.location.protocol}//api.textmebot.com/send.php?apikey=${encodeURIComponent(apikey)}&group_info=${encodeURIComponent(code)}&json=yes`, {
+                        method: 'GET',
+                        mode: 'cors'
+                    });
+                    const resultText = await response.text();
+                    
+                    try {
+                        const result = JSON.parse(resultText);
+                        
+                        if (result.status) {
+                            const group = {
+                                id: result.group_id,
+                                name: result.subject,
+                                invitationCode: code,
+                                selected: true
+                            };
+                            
+                            // Evitar duplicados
+                            if (!groups.find(g => g.id === group.id)) {
+                                groups.push(group);
+                            }
+                        }
+                    } catch (parseError) {
+                        console.error(`Error parsing group ${code}:`, parseError);
+                    }
+                    
+                    // Pequeña pausa entre requests
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (error) {
+                    console.error(`Error loading group ${code}:`, error);
+                }
+            }
+            
+            renderGroups();
+            saveConfig();
+            alert(`Se cargaron ${groups.length} grupos exitosamente`);
+        }
+        
+        // Exportar configuración
+        function exportConfig() {
+            const config = {
+                groups: groups,
+                messageText: document.getElementById('message-text').value,
+                messageType: document.getElementById('message-type').value,
+                fileUrl: document.getElementById('file-url').value,
+                delay: document.getElementById('delay').value,
+                exportDate: new Date().toISOString()
             };
             
-            actualizarEstadisticas();
-            renderizarResultados();
-            document.getElementById('alertContainer').innerHTML = '';
-            mostrarProgreso(false);
-            
-            if (debugMode) {
-                document.getElementById('debugInfo').textContent = '=== DEBUG MODE ACTIVADO v2.1.0 ===\n\n';
-            }
-            
-            mostrarAlerta('🧹 Todo limpiado correctamente.', 'success');
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'whatsapp-bulk-config.json';
+            a.click();
+            URL.revokeObjectURL(url);
         }
-
-        function mostrarEstadisticas() {
-            if (estadisticas.total === 0) {
-                mostrarAlerta('⚠️ No hay estadísticas para mostrar. Verifica algunos números primero.', 'error');
-                return;
-            }
+        
+        // Mostrar ayuda
+        function showHelp() {
+            const helpContent = `
+            <h3>📖 Guía de Uso Rápida</h3>
+            <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <h4>1️⃣ Configuración</h4>
+                <p>• Obtén tu API Key en <a href="https://textmebot.com" target="_blank">textmebot.com</a></p>
+                <p>• Ingresa tu API Key y verifica la conexión</p>
+                
+                <h4>2️⃣ Agregar Grupos</h4>
+                <p>• Copia el código del enlace de invitación de WhatsApp</p>
+                <p>• Ejemplo: https://chat.whatsapp.com/<strong>RTiy3mHqIDfD22H1InRR5E</strong></p>
+                <p>• Solo usa la parte después de la última "/"</p>
+                
+                <h4>3️⃣ Crear Mensaje</h4>
+                <p>• Escribe tu mensaje con variables: {grupo}, {fecha}, {hora}</p>
+                <p>• Para archivos: sube a Google Drive y usa enlace público</p>
+                
+                <h4>4️⃣ Enviar</h4>
+                <p>• Selecciona grupos y revisa el resumen</p>
+                <p>• ⚠️ <strong>IMPORTANTE:</strong> Debes ser miembro de todos los grupos</p>
+                
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <strong>Agregar grupos uno por uno:</strong> Usa el código de invitación de cada grupo
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <strong>Orden automático:</strong> Los grupos se ordenan por nombre automáticamente
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <strong>Búsqueda rápida:</strong> Usa el buscador para encontrar grupos específicos
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <strong>Cambiar orden:</strong> Usa el botón "A-Z" para alternar entre ascendente y descendente
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">5</span>
+                                <strong>Gestión masiva:</strong> Selecciona múltiples grupos para acciones en lote
+                            </div>
+            </div>
+            `;
             
-            var porcentajeWhatsApp = ((estadisticas.conWhatsApp / estadisticas.total) * 100).toFixed(1);
-            var porcentajeSinWhatsApp = ((estadisticas.sinWhatsApp / estadisticas.total) * 100).toFixed(1);
+            // Crear modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 1000; display: flex; 
+                align-items: center; justify-content: center; padding: 20px;
+            `;
             
-            var mensaje = '📊 Estadísticas Detalladas:\n\n' +
-                          '🔢 Total verificados: ' + estadisticas.total + '\n' +
-                          '✅ Con WhatsApp: ' + estadisticas.conWhatsApp + ' (' + porcentajeWhatsApp + '%)\n' +
-                          '❌ Sin WhatsApp: ' + estadisticas.sinWhatsApp + ' (' + porcentajeSinWhatsApp + '%)\n' +
-                          '⏳ Pendientes: ' + estadisticas.pendientes;
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; 
+                max-width: 90%; max-height: 90%; overflow-y: auto;
+                position: relative;
+            `;
             
-            alert(mensaje);
+            content.innerHTML = helpContent + `
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Cerrar</button>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Cerrar con ESC o clic fuera
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') modal.remove();
+            });
         }
-
-        function exportarResultados() {
-            if (numerosProcesados.length === 0) {
-                mostrarAlerta('⚠️ No hay resultados para exportar.', 'error');
-                return;
+        
+        // Detectar si se está ejecutando en GitHub Pages
+        function detectEnvironment() {
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            
+            if (isGitHubPages) {
+                console.log('🚀 Ejecutándose en GitHub Pages');
+                
+                // Mostrar aviso de primera vez
+                if (!localStorage.getItem('whatsapp-bulk-first-visit')) {
+                    setTimeout(() => {
+                        showAlert('connection-status', 'warning', 
+                            '👋 ¡Bienvenido! Esta es tu primera visita. Clic en "Guía de Uso" para empezar.');
+                        localStorage.setItem('whatsapp-bulk-first-visit', 'true');
+                    }, 1000);
+                }
             }
-            
-            // Crear CSV
-            var csv = ['Numero,Resultado'];
-            for (var i = 0; i < numerosProcesados.length; i++) {
-                var item = numerosProcesados[i];
-                csv.push(item.numero + ',' + (item.resultado || 'Pendiente'));
-            }
-            
-            // Descargar archivo
-            var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            var link = document.createElement('a');
-            var url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'verificacion_whatsapp_' + new Date().toISOString().split('T')[0] + '.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            mostrarAlerta('📄 Archivo CSV descargado correctamente.', 'success');
         }
-
-        // Inicializar la aplicación
-        window.addEventListener('load', function() {
-            actualizarEstadisticas();
-            renderizarResultados();
-            logDebug('Aplicación inicializada - Versión 2.1.0');
-        });
+        
+        // Inicialización
+        sendingProcess = true;
+        loadConfig();
+        detectEnvironment();
+        
+        // Auto-guardar cada 30 segundos
+        setInterval(saveConfig, 30000);
+        
+        // Eventos para auto-guardar
+        document.getElementById('message-text').addEventListener('input', saveConfig);
+        document.getElementById('message-type').addEventListener('change', saveConfig);
+        document.getElementById('file-url').addEventListener('input', saveConfig);
+        document.getElementById('delay').addEventListener('input', saveConfig);
     </script>
 </body>
 </html>
