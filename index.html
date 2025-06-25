@@ -526,17 +526,29 @@
                     
                     <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="procesarArchivo(this)">
                     
+                    <!-- Barra de progreso CSV -->
+                    <div class="progress-container" id="csvProgressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="csvProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="csvProgressText">Procesando lote...</div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 20px;">
-                        <button class="btn btn-secondary" onclick="toggleDebug()">
+                        <button class="btn btn-secondary" onclick="toggleDebugCSV()">
                             🔧 Debug
+                        </button>
+                        <button class="btn btn-danger" id="csvCancelBtn" onclick="cancelarProcesamientoCSV()" style="display: none;">
+                            ⏹️ Cancelar
                         </button>
                     </div>
                     
                     <div id="csvAlertContainer"></div>
+                    <div class="debug-info" id="csvDebugInfo"></div>
                 </div>
                 
                 <!-- Sección de Resultados CSV -->
-                <div class="results-section">
+                <div class="results-section" id="csvResultsSection">
                     <h3 class="section-title">📈 Progreso del Procesamiento</h3>
                     
                     <div style="padding: 40px; text-align: center; color: #666;">
@@ -566,6 +578,51 @@
         // Variables para CSV bulk
         var csvData = [];
         var csvHeaders = [];
+        var csvDebugMode = false;
+        var procesamientoActivo = false;
+        var procesamientoCancelado = false;
+
+        function toggleDebugCSV() {
+            csvDebugMode = !csvDebugMode;
+            var debugInfo = document.getElementById('csvDebugInfo');
+            debugInfo.style.display = csvDebugMode ? 'block' : 'none';
+            if (csvDebugMode) {
+                debugInfo.textContent = '=== CSV DEBUG MODE ACTIVADO v2.1.0 ===\n\n';
+            }
+        }
+
+        function logDebugCSV(mensaje, data) {
+            if (csvDebugMode) {
+                var debugInfo = document.getElementById('csvDebugInfo');
+                var timestamp = new Date().toLocaleTimeString();
+                var logEntry = '[' + timestamp + '] CSV: ' + mensaje;
+                if (data) {
+                    logEntry += '\n' + JSON.stringify(data, null, 2);
+                }
+                debugInfo.textContent += logEntry + '\n\n';
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+            }
+            console.log('CSV: ' + mensaje, data);
+        }
+
+        function mostrarProgresoCSV(visible) {
+            var progressContainer = document.getElementById('csvProgressContainer');
+            progressContainer.style.display = visible ? 'block' : 'none';
+        }
+
+        function actualizarProgresoCSV(porcentaje, mensaje) {
+            document.getElementById('csvProgressFill').style.width = porcentaje + '%';
+            document.getElementById('csvProgressText').textContent = mensaje || ('Procesando... ' + porcentaje + '%');
+        }
+
+        function cancelarProcesamientoCSV() {
+            procesamientoCancelado = true;
+            procesamientoActivo = false;
+            mostrarProgresoCSV(false);
+            document.getElementById('csvCancelBtn').style.display = 'none';
+            mostrarAlertaCSV('❌ Procesamiento cancelado por el usuario', 'error');
+            logDebugCSV('Procesamiento cancelado por el usuario');
+        }
 
         function cambiarTab(tab) {
             // Ocultar todas las pestañas
@@ -682,18 +739,35 @@
                 csvHeaders = lineas[0].split(',').map(function(h) { return h.trim(); });
                 logDebug('Headers encontrados:', csvHeaders);
                 
-                // Buscar columna de números móviles
+                // Buscar columna de números móviles - MEJORADO
                 var columnaNumero = -1;
+                var posiblesNombres = ['mobile_number', 'mobile', 'number', 'telefono', 'celular', 'phone'];
+                
+                // Primero buscar coincidencia exacta
                 for (var i = 0; i < csvHeaders.length; i++) {
-                    var header = csvHeaders[i].toLowerCase();
-                    if (header.includes('mobile') || header.includes('number') || header.includes('telefono') || header.includes('celular')) {
+                    var header = csvHeaders[i].toLowerCase().trim();
+                    if (posiblesNombres.indexOf(header) !== -1) {
                         columnaNumero = i;
                         break;
                     }
                 }
                 
+                // Si no encuentra coincidencia exacta, buscar que contenga las palabras
                 if (columnaNumero === -1) {
-                    throw new Error('No se encontró una columna de números móviles. Busca columnas con nombres como "mobile_number", "telefono", etc.');
+                    for (var i = 0; i < csvHeaders.length; i++) {
+                        var header = csvHeaders[i].toLowerCase();
+                        for (var j = 0; j < posiblesNombres.length; j++) {
+                            if (header.includes(posiblesNombres[j]) && !header.includes('icc')) {
+                                columnaNumero = i;
+                                break;
+                            }
+                        }
+                        if (columnaNumero !== -1) break;
+                    }
+                }
+                
+                if (columnaNumero === -1) {
+                    throw new Error('No se encontró una columna de números móviles. Asegúrate de que tenga un nombre como "mobile_number", "telefono", etc.');
                 }
                 
                 logDebug('Columna de números encontrada:', {
@@ -718,13 +792,20 @@
                                 fila[csvHeaders[j]] = valores[j].trim();
                             }
                             
-                            // Normalizar el número móvil
+                            // Normalizar el número móvil - USAR LA COLUMNA CORRECTA
                             var numeroOriginal = valores[columnaNumero].trim();
                             var numeroNormalizado = normalizarNumero(numeroOriginal);
+                            
+                            logDebug('Procesando fila ' + i + ':', {
+                                numeroOriginal: numeroOriginal,
+                                numeroNormalizado: numeroNormalizado,
+                                columna: csvHeaders[columnaNumero]
+                            });
                             
                             if (numeroNormalizado) {
                                 fila._numeroMovil = numeroNormalizado;
                                 fila._numeroOriginal = numeroOriginal;
+                                fila._indice = i - 1; // Para tracking
                                 csvData.push(fila);
                                 
                                 if (numeroOriginal.length === 10) {
@@ -742,6 +823,7 @@
                     totalFilas: csvData.length,
                     numerosConvertidos: numerosConvertidos,
                     numerosInvalidos: numerosInvalidos,
+                    columnaUtilizada: csvHeaders[columnaNumero],
                     muestra: csvData.slice(0, 3)
                 });
                 
@@ -755,6 +837,7 @@
                 
                 var mensaje = '✅ Archivo procesado exitosamente:\n';
                 mensaje += '📊 ' + csvData.length + ' registros válidos\n';
+                mensaje += '📱 Columna usada: ' + csvHeaders[columnaNumero] + '\n';
                 if (numerosConvertidos > 0) {
                     mensaje += '🔄 ' + numerosConvertidos + ' números convertidos de 10 a 13 dígitos\n';
                 }
@@ -772,10 +855,10 @@
         }
 
         function mostrarPreviewCSV() {
-            logDebug('Mostrando preview del CSV...');
+            logDebugCSV('Mostrando preview del CSV...');
             
             // Actualizar la sección de resultados con el preview
-            var resultadosSection = document.querySelector('#tab-csv .results-section');
+            var resultadosSection = document.getElementById('csvResultsSection');
             
             var html = '<h3 class="section-title">📋 Preview de Datos</h3>';
             
@@ -824,23 +907,56 @@
             
             // Botón para procesar
             html += '<div style="text-align: center; margin: 20px 0;">';
-            html += '<button class="btn" onclick="iniciarProcesamientoCSV()">';
+            html += '<button class="btn" id="csvProcessBtn" onclick="iniciarProcesamientoCSV()">';
             html += '🚀 Procesar ' + csvData.length + ' números';
             html += '</button>';
             html += '</div>';
             
             resultadosSection.innerHTML = html;
-            logDebug('Preview mostrado exitosamente');
+            logDebugCSV('Preview mostrado exitosamente');
         }
 
         function iniciarProcesamientoCSV() {
-            mostrarAlertaCSV('🚀 Iniciando procesamiento masivo de ' + csvData.length + ' números...', 'info');
-            logDebug('Iniciando procesamiento CSV con ' + csvData.length + ' registros');
+            if (procesamientoActivo) {
+                mostrarAlertaCSV('⚠️ Ya hay un procesamiento en curso', 'error');
+                return;
+            }
             
-            // Por ahora solo mostramos el mensaje
-            // En el siguiente paso implementaremos el procesamiento real
+            procesamientoActivo = true;
+            procesamientoCancelado = false;
+            
+            // Deshabilitar botón y mostrar cancelar
+            document.getElementById('csvProcessBtn').disabled = true;
+            document.getElementById('csvCancelBtn').style.display = 'inline-block';
+            
+            mostrarProgresoCSV(true);
+            actualizarProgresoCSV(0, 'Iniciando procesamiento...');
+            
+            mostrarAlertaCSV('🚀 Iniciando procesamiento masivo de ' + csvData.length + ' números...', 'info');
+            logDebugCSV('Iniciando procesamiento CSV con ' + csvData.length + ' registros');
+            
+            // Simular inicio del procesamiento
             setTimeout(function() {
-                mostrarAlertaCSV('⏳ Función de procesamiento en desarrollo...', 'info');
+                if (!procesamientoCancelado) {
+                    actualizarProgresoCSV(10, 'Preparando lotes de números...');
+                    mostrarAlertaCSV('⚙️ Preparando procesamiento en lotes de 50 números...', 'info');
+                    
+                    setTimeout(function() {
+                        if (!procesamientoCancelado) {
+                            // Aquí iría el procesamiento real en el siguiente paso
+                            actualizarProgresoCSV(25, 'Procesamiento real vendrá en el siguiente paso...');
+                            mostrarAlertaCSV('🔧 Función de procesamiento masivo en desarrollo...', 'info');
+                            
+                            // Reset después de demo
+                            setTimeout(function() {
+                                procesamientoActivo = false;
+                                document.getElementById('csvProcessBtn').disabled = false;
+                                document.getElementById('csvCancelBtn').style.display = 'none';
+                                mostrarProgresoCSV(false);
+                            }, 3000);
+                        }
+                    }, 2000);
+                }
             }, 1000);
         }
 
