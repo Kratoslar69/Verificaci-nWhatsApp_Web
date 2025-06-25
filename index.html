@@ -51,9 +51,81 @@
         
         .content {
             padding: 40px;
-            display: grid;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #25D366;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-family: 'Gothic A1', Arial, sans-serif;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: #25D366;
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e8f5e8;
+        }
+        
+        .tab-content {
+            display: none;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
+        }
+        
+        .tab-content.active {
+            display: grid;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #25D366;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8fffe;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover {
+            border-color: #128C7E;
+            background: #f0fdf4;
+        }
+        
+        .upload-zone.dragover {
+            border-color: #075E54;
+            background: #ecfdf5;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #25D366;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #075E54;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .file-input {
+            display: none;
         }
         
         .form-section {
@@ -338,87 +410,137 @@
         </div>
         
         <div class="content">
-            <!-- Sección de Formulario -->
-            <div class="form-section">
-                <h3 class="section-title">📝 Números a Verificar</h3>
-                
-                <div class="instructions">
-                    <h4>📋 Instrucciones:</h4>
-                    <ul>
-                        <li>Ingresa un número por línea</li>
-                        <li>Formato: 521XXXXXXXXXX (13 dígitos)</li>
-                        <li>Ejemplo: 5219621427412</li>
-                        <li>No incluyas espacios ni guiones</li>
-                    </ul>
-                </div>
-                
-                <div class="textarea-container">
-                    <label for="numbersInput">Números de teléfono:</label>
-                    <textarea 
-                        id="numbersInput" 
-                        class="numbers-input" 
-                        placeholder="5219621427412&#10;5219621356263&#10;5219621429573&#10;..."
-                    ></textarea>
-                </div>
-                
-                <div style="text-align: center;">
-                    <button class="btn" id="verifyBtn" onclick="verificarNumeros()">
-                        ✅ Verificar Números
-                    </button>
-                    <button class="btn btn-danger" onclick="limpiarTodo()">
-                        🧹 Limpiar Todo
-                    </button>
-                    <button class="btn btn-secondary" onclick="toggleDebug()">
-                        🔧 Debug
-                    </button>
-                </div>
-                
-                <div class="progress-container" id="progressContainer">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Verificando números...</div>
-                </div>
-                
-                <div id="alertContainer"></div>
-                <div class="debug-info" id="debugInfo"></div>
+            <!-- Pestañas -->
+            <div class="tabs">
+                <button class="tab active" onclick="cambiarTab('manual')">
+                    📝 Manual
+                </button>
+                <button class="tab" onclick="cambiarTab('csv')">
+                    📊 CSV Bulk
+                </button>
             </div>
             
-            <!-- Sección de Resultados -->
-            <div class="results-section">
-                <h3 class="section-title">📊 Resultados</h3>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalNumbers">0</div>
-                        <div class="stat-label">Total</div>
+            <!-- TAB MANUAL (el sistema actual) -->
+            <div id="tab-manual" class="tab-content active">
+                <!-- Sección de Formulario -->
+                <div class="form-section">
+                    <h3 class="section-title">📝 Números a Verificar</h3>
+                    
+                    <div class="instructions">
+                        <h4>📋 Instrucciones:</h4>
+                        <ul>
+                            <li>Ingresa un número por línea</li>
+                            <li>Formato: 521XXXXXXXXXX (13 dígitos)</li>
+                            <li>Ejemplo: 5219621427412</li>
+                            <li>No incluyas espacios ni guiones</li>
+                        </ul>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="withWhatsApp">0</div>
-                        <div class="stat-label">Con WhatsApp</div>
+                    
+                    <div class="textarea-container">
+                        <label for="numbersInput">Números de teléfono:</label>
+                        <textarea 
+                            id="numbersInput" 
+                            class="numbers-input" 
+                            placeholder="5219621427412&#10;5219621356263&#10;5219621429573&#10;..."
+                        ></textarea>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="withoutWhatsApp">0</div>
-                        <div class="stat-label">Sin WhatsApp</div>
+                    
+                    <div style="text-align: center;">
+                        <button class="btn" id="verifyBtn" onclick="verificarNumeros()">
+                            ✅ Verificar Números
+                        </button>
+                        <button class="btn btn-danger" onclick="limpiarTodo()">
+                            🧹 Limpiar Todo
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleDebug()">
+                            🔧 Debug
+                        </button>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pendingNumbers">0</div>
-                        <div class="stat-label">Pendientes</div>
+                    
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Verificando números...</div>
                     </div>
+                    
+                    <div id="alertContainer"></div>
+                    <div class="debug-info" id="debugInfo"></div>
                 </div>
                 
-                <div style="text-align: center; margin: 15px 0;">
-                    <button class="btn btn-secondary" onclick="mostrarEstadisticas()">
-                        📈 Ver Estadísticas
-                    </button>
-                    <button class="btn btn-secondary" onclick="exportarResultados()">
-                        📄 Exportar CSV
-                    </button>
+                <!-- Sección de Resultados -->
+                <div class="results-section">
+                    <h3 class="section-title">📊 Resultados</h3>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalNumbers">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="withWhatsApp">0</div>
+                            <div class="stat-label">Con WhatsApp</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="withoutWhatsApp">0</div>
+                            <div class="stat-label">Sin WhatsApp</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="pendingNumbers">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 15px 0;">
+                        <button class="btn btn-secondary" onclick="mostrarEstadisticas()">
+                            📈 Ver Estadísticas
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportarResultados()">
+                            📄 Exportar CSV
+                        </button>
+                    </div>
+                    
+                    <div class="results-list" id="resultsList">
+                        <div style="padding: 40px; text-align: center; color: #666;">
+                            No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TAB CSV BULK (nuevo sistema) -->
+            <div id="tab-csv" class="tab-content">
+                <!-- Sección de Upload -->
+                <div class="form-section">
+                    <h3 class="section-title">📊 Procesamiento CSV Masivo</h3>
+                    
+                    <div class="upload-zone" onclick="document.getElementById('csvFile').click()">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">
+                            Haz clic aquí o arrastra tu archivo CSV
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            Formatos soportados: .csv (máximo 1500 registros)
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="procesarArchivo(this)">
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="toggleDebug()">
+                            🔧 Debug
+                        </button>
+                    </div>
+                    
+                    <div id="csvAlertContainer"></div>
                 </div>
                 
-                <div class="results-list" id="resultsList">
+                <!-- Sección de Resultados CSV -->
+                <div class="results-section">
+                    <h3 class="section-title">📈 Progreso del Procesamiento</h3>
+                    
                     <div style="padding: 40px; text-align: center; color: #666;">
-                        No hay resultados aún. Ingresa números y haz clic en "Verificar Números".
+                        Sube un archivo CSV para comenzar el procesamiento masivo.
                     </div>
                 </div>
             </div>
@@ -440,6 +562,126 @@
         // URL del webhook de n8n
         var webhookUrl = "https://devwebhookn8n.m4metadryve.mx/webhook/VerificaciónWhatsApp_Web";
         var debugMode = false;
+
+        // Variables para CSV bulk
+        var csvData = [];
+        var csvHeaders = [];
+
+        function cambiarTab(tab) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(function(tc) {
+                tc.classList.remove('active');
+            });
+            
+            // Mostrar la pestaña seleccionada
+            document.querySelector('[onclick="cambiarTab(\'' + tab + '\')"]').classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            logDebug('Cambiado a pestaña: ' + tab);
+        }
+
+        function procesarArchivo(input) {
+            var archivo = input.files[0];
+            if (!archivo) return;
+            
+            logDebug('Archivo seleccionado:', {
+                nombre: archivo.name,
+                tamaño: archivo.size,
+                tipo: archivo.type
+            });
+            
+            // Validar que sea CSV
+            if (!archivo.name.toLowerCase().endsWith('.csv')) {
+                mostrarAlerta('⚠️ Por favor selecciona un archivo CSV válido.', 'error');
+                return;
+            }
+            
+            // Leer el archivo
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var contenido = e.target.result;
+                parsearCSV(contenido);
+            };
+            reader.readAsText(archivo);
+        }
+
+        function parsearCSV(contenido) {
+            logDebug('Parseando CSV...');
+            
+            try {
+                var lineas = contenido.split('\n');
+                
+                if (lineas.length < 2) {
+                    throw new Error('El archivo debe tener al menos una fila de datos');
+                }
+                
+                // Extraer headers
+                csvHeaders = lineas[0].split(',').map(function(h) { return h.trim(); });
+                logDebug('Headers encontrados:', csvHeaders);
+                
+                // Buscar columna de números móviles
+                var columnaNumero = -1;
+                for (var i = 0; i < csvHeaders.length; i++) {
+                    var header = csvHeaders[i].toLowerCase();
+                    if (header.includes('mobile') || header.includes('number') || header.includes('telefono') || header.includes('celular')) {
+                        columnaNumero = i;
+                        break;
+                    }
+                }
+                
+                if (columnaNumero === -1) {
+                    throw new Error('No se encontró una columna de números móviles. Busca columnas con nombres como "mobile_number", "telefono", etc.');
+                }
+                
+                logDebug('Columna de números encontrada en posición:', columnaNumero);
+                
+                // Parsear datos
+                csvData = [];
+                for (var i = 1; i < lineas.length; i++) {
+                    var linea = lineas[i].trim();
+                    if (linea) {
+                        var valores = linea.split(',');
+                        if (valores.length >= csvHeaders.length) {
+                            var fila = {};
+                            for (var j = 0; j < csvHeaders.length; j++) {
+                                fila[csvHeaders[j]] = valores[j].trim();
+                            }
+                            fila._numeroMovil = valores[columnaNumero].trim();
+                            csvData.push(fila);
+                        }
+                    }
+                }
+                
+                logDebug('Datos parseados:', {
+                    filas: csvData.length,
+                    muestra: csvData.slice(0, 3)
+                });
+                
+                if (csvData.length === 0) {
+                    throw new Error('No se encontraron datos válidos en el archivo');
+                }
+                
+                if (csvData.length > 1500) {
+                    throw new Error('El archivo tiene ' + csvData.length + ' registros. Máximo permitido: 1500');
+                }
+                
+                mostrarAlerta('✅ Archivo CSV cargado: ' + csvData.length + ' registros encontrados', 'success');
+                mostrarPreviewCSV();
+                
+            } catch (error) {
+                logDebug('Error parseando CSV:', error);
+                mostrarAlerta('❌ Error procesando archivo: ' + error.message, 'error');
+            }
+        }
+
+        function mostrarPreviewCSV() {
+            logDebug('Mostrando preview del CSV...');
+            // Por ahora solo mostramos mensaje de éxito
+            // En el siguiente paso agregaremos el preview completo
+        }
 
         function logDebug(mensaje, data) {
             if (debugMode) {
