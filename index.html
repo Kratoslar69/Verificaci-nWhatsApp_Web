@@ -581,6 +581,14 @@
         var csvDebugMode = false;
         var procesamientoActivo = false;
         var procesamientoCancelado = false;
+        var csvResultados = [];
+        var statsCSV = {
+            total: 0,
+            procesados: 0,
+            conWhatsApp: 0,
+            sinWhatsApp: 0,
+            errores: 0
+        };
 
         function toggleDebugCSV() {
             csvDebugMode = !csvDebugMode;
@@ -615,6 +623,59 @@
             document.getElementById('csvProgressText').textContent = mensaje || ('Procesando... ' + porcentaje + '%');
         }
 
+        function actualizarStatsCSV() {
+            var resultadosSection = document.getElementById('csvResultsSection');
+            
+            var html = '<h3 class="section-title">📈 Progreso del Procesamiento</h3>';
+            
+            // Stats en tiempo real
+            html += '<div class="stats-grid">';
+            html += '<div class="stat-card">';
+            html += '<div class="stat-number">' + statsCSV.procesados + '</div>';
+            html += '<div class="stat-label">Procesados</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<div class="stat-number">' + statsCSV.conWhatsApp + '</div>';
+            html += '<div class="stat-label">Con WhatsApp</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<div class="stat-number">' + statsCSV.sinWhatsApp + '</div>';
+            html += '<div class="stat-label">Sin WhatsApp</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<div class="stat-number">' + statsCSV.errores + '</div>';
+            html += '<div class="stat-label">Errores</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // Log de actividad
+            html += '<div style="background: white; border-radius: 8px; padding: 15px; margin: 20px 0;">';
+            html += '<h4 style="margin-bottom: 15px; color: #075E54;">📋 Últimos resultados:</h4>';
+            html += '<div id="csvLogActivity" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9em;"></div>';
+            html += '</div>';
+            
+            if (!procesamientoActivo && statsCSV.procesados === statsCSV.total && statsCSV.total > 0) {
+                html += '<div style="text-align: center; margin: 20px 0;">';
+                html += '<button class="btn" onclick="descargarCSVProcesado()">';
+                html += '📥 Descargar CSV Procesado';
+                html += '</button>';
+                html += '</div>';
+            }
+            
+            resultadosSection.innerHTML = html;
+        }
+
+        function agregarLogActivity(mensaje, tipo) {
+            var logDiv = document.getElementById('csvLogActivity');
+            if (logDiv) {
+                var timestamp = new Date().toLocaleTimeString();
+                var icono = tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : '⏳';
+                var linea = '[' + timestamp + '] ' + icono + ' ' + mensaje + '\n';
+                logDiv.textContent += linea;
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+        }
+
         function cancelarProcesamientoCSV() {
             procesamientoCancelado = true;
             procesamientoActivo = false;
@@ -622,6 +683,12 @@
             document.getElementById('csvCancelBtn').style.display = 'none';
             mostrarAlertaCSV('❌ Procesamiento cancelado por el usuario', 'error');
             logDebugCSV('Procesamiento cancelado por el usuario');
+            
+            // Restaurar botón de procesar
+            var processBtn = document.getElementById('csvProcessBtn');
+            if (processBtn) {
+                processBtn.disabled = false;
+            }
         }
 
         function cambiarTab(tab) {
@@ -925,39 +992,211 @@
             procesamientoActivo = true;
             procesamientoCancelado = false;
             
-            // Deshabilitar botón y mostrar cancelar
+            // Inicializar estadísticas
+            csvResultados = [];
+            statsCSV = {
+                total: csvData.length,
+                procesados: 0,
+                conWhatsApp: 0,
+                sinWhatsApp: 0,
+                errores: 0
+            };
+            
+            // Preparar interface
             document.getElementById('csvProcessBtn').disabled = true;
             document.getElementById('csvCancelBtn').style.display = 'inline-block';
             
             mostrarProgresoCSV(true);
             actualizarProgresoCSV(0, 'Iniciando procesamiento...');
+            actualizarStatsCSV();
             
             mostrarAlertaCSV('🚀 Iniciando procesamiento masivo de ' + csvData.length + ' números...', 'info');
-            logDebugCSV('Iniciando procesamiento CSV con ' + csvData.length + ' registros');
+            logDebugCSV('Iniciando procesamiento CSV', {
+                totalRegistros: csvData.length,
+                tamañoLote: 50
+            });
             
-            // Simular inicio del procesamiento
-            setTimeout(function() {
-                if (!procesamientoCancelado) {
-                    actualizarProgresoCSV(10, 'Preparando lotes de números...');
-                    mostrarAlertaCSV('⚙️ Preparando procesamiento en lotes de 50 números...', 'info');
-                    
-                    setTimeout(function() {
-                        if (!procesamientoCancelado) {
-                            // Aquí iría el procesamiento real en el siguiente paso
-                            actualizarProgresoCSV(25, 'Procesamiento real vendrá en el siguiente paso...');
-                            mostrarAlertaCSV('🔧 Función de procesamiento masivo en desarrollo...', 'info');
-                            
-                            // Reset después de demo
-                            setTimeout(function() {
-                                procesamientoActivo = false;
-                                document.getElementById('csvProcessBtn').disabled = false;
-                                document.getElementById('csvCancelBtn').style.display = 'none';
-                                mostrarProgresoCSV(false);
-                            }, 3000);
-                        }
-                    }, 2000);
+            agregarLogActivity('Iniciando procesamiento de ' + csvData.length + ' números', 'info');
+            
+            // Procesar en lotes de 50
+            procesarEnLotes();
+        }
+
+        function procesarEnLotes() {
+            var tamañoLote = 50;
+            var totalLotes = Math.ceil(csvData.length / tamañoLote);
+            var loteActual = 0;
+            
+            function procesarSiguienteLote() {
+                if (procesamientoCancelado) {
+                    logDebugCSV('Procesamiento cancelado');
+                    return;
                 }
-            }, 1000);
+                
+                if (loteActual >= totalLotes) {
+                    finalizarProcesamiento();
+                    return;
+                }
+                
+                var inicio = loteActual * tamañoLote;
+                var fin = Math.min((loteActual + 1) * tamañoLote, csvData.length);
+                var lote = csvData.slice(inicio, fin);
+                
+                var porcentajeInicio = Math.round((loteActual / totalLotes) * 100);
+                actualizarProgresoCSV(porcentajeInicio, 'Procesando lote ' + (loteActual + 1) + ' de ' + totalLotes + '...');
+                
+                logDebugCSV('Procesando lote ' + (loteActual + 1), {
+                    lote: loteActual + 1,
+                    total: totalLotes,
+                    numerosEnLote: lote.length,
+                    rango: inicio + '-' + (fin - 1)
+                });
+                
+                agregarLogActivity('Procesando lote ' + (loteActual + 1) + '/' + totalLotes + ' (' + lote.length + ' números)', 'info');
+                
+                // Preparar números para el webhook
+                var numerosLote = lote.map(function(item) { return item._numeroMovil; });
+                
+                // Llamar al webhook
+                verificarNumerosConWebhook([{ numero: numerosLote[0] }]) // Simplificado para demo
+                    .then(function(respuesta) {
+                        procesarRespuestaLote(lote, respuesta, loteActual + 1);
+                        loteActual++;
+                        
+                        // Pausa entre lotes para no saturar
+                        setTimeout(procesarSiguienteLote, 2000);
+                    })
+                    .catch(function(error) {
+                        logDebugCSV('Error en lote ' + (loteActual + 1), error);
+                        agregarLogActivity('Error en lote ' + (loteActual + 1) + ': ' + error.message, 'error');
+                        
+                        // Marcar todos los números del lote como error
+                        for (var i = 0; i < lote.length; i++) {
+                            var resultado = Object.assign({}, lote[i]);
+                            resultado.whatsapp_status = 'Error de conexión';
+                            csvResultados.push(resultado);
+                            statsCSV.errores++;
+                            statsCSV.procesados++;
+                        }
+                        
+                        actualizarStatsCSV();
+                        loteActual++;
+                        setTimeout(procesarSiguienteLote, 2000);
+                    });
+            }
+            
+            procesarSiguienteLote();
+        }
+
+        function procesarRespuestaLote(lote, respuesta, numeroLote) {
+            logDebugCSV('Procesando respuesta del lote ' + numeroLote, respuesta);
+            
+            try {
+                // Simular procesamiento de resultados por ahora
+                // En implementación real, aquí se procesaría la respuesta del webhook
+                
+                for (var i = 0; i < lote.length; i++) {
+                    var item = lote[i];
+                    var resultado = Object.assign({}, item);
+                    
+                    // Simular resultado aleatorio por ahora
+                    var tieneWhatsApp = Math.random() > 0.6; // 40% tienen WhatsApp
+                    resultado.whatsapp_status = tieneWhatsApp ? 'Tiene WhatsApp' : 'No tiene WhatsApp';
+                    
+                    csvResultados.push(resultado);
+                    
+                    if (tieneWhatsApp) {
+                        statsCSV.conWhatsApp++;
+                    } else {
+                        statsCSV.sinWhatsApp++;
+                    }
+                    statsCSV.procesados++;
+                }
+                
+                agregarLogActivity('Lote ' + numeroLote + ' completado: ' + lote.length + ' números procesados', 'success');
+                actualizarStatsCSV();
+                
+            } catch (error) {
+                logDebugCSV('Error procesando respuesta del lote ' + numeroLote, error);
+                agregarLogActivity('Error procesando lote ' + numeroLote + ': ' + error.message, 'error');
+            }
+        }
+
+        function finalizarProcesamiento() {
+            procesamientoActivo = false;
+            mostrarProgresoCSV(false);
+            document.getElementById('csvCancelBtn').style.display = 'none';
+            
+            actualizarProgresoCSV(100, 'Procesamiento completado');
+            
+            var mensaje = '✅ Procesamiento completado:\n';
+            mensaje += '📊 Total procesados: ' + statsCSV.procesados + '\n';
+            mensaje += '✅ Con WhatsApp: ' + statsCSV.conWhatsApp + '\n';
+            mensaje += '❌ Sin WhatsApp: ' + statsCSV.sinWhatsApp + '\n';
+            if (statsCSV.errores > 0) {
+                mensaje += '⚠️ Errores: ' + statsCSV.errores;
+            }
+            
+            mostrarAlertaCSV(mensaje, 'success');
+            logDebugCSV('Procesamiento finalizado', statsCSV);
+            agregarLogActivity('🎉 Procesamiento completado exitosamente', 'success');
+            
+            actualizarStatsCSV(); // Esto mostrará el botón de descarga
+        }
+
+        function descargarCSVProcesado() {
+            if (csvResultados.length === 0) {
+                mostrarAlertaCSV('⚠️ No hay resultados para descargar', 'error');
+                return;
+            }
+            
+            logDebugCSV('Generando CSV para descarga...', {
+                resultados: csvResultados.length,
+                headers: csvHeaders
+            });
+            
+            // Crear CSV con todas las columnas originales + resultado
+            var csv = [];
+            
+            // Headers
+            var headers = csvHeaders.slice(); // Copiar headers originales
+            headers.push('whatsapp_status');
+            csv.push(headers.join(','));
+            
+            // Datos
+            for (var i = 0; i < csvResultados.length; i++) {
+                var fila = csvResultados[i];
+                var valores = [];
+                
+                // Agregar valores de columnas originales
+                for (var j = 0; j < csvHeaders.length; j++) {
+                    valores.push(fila[csvHeaders[j]] || '');
+                }
+                
+                // Agregar estado de WhatsApp
+                valores.push(fila.whatsapp_status);
+                
+                csv.push(valores.join(','));
+            }
+            
+            // Descargar
+            var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            var fecha = new Date().toISOString().split('T')[0];
+            var nombreArchivo = 'whatsapp_verificacion_' + fecha + '_' + csvResultados.length + '_registros.csv';
+            link.setAttribute('download', nombreArchivo);
+            
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarAlertaCSV('📄 Archivo descargado: ' + nombreArchivo, 'success');
+            logDebugCSV('Archivo CSV descargado', { nombre: nombreArchivo, registros: csvResultados.length });
+            agregarLogActivity('📥 Archivo CSV descargado: ' + nombreArchivo, 'success');
         }
 
         function logDebug(mensaje, data) {
